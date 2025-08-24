@@ -67,6 +67,21 @@ function setActiveNavigation() {
 }
 
 function initializeDashboard() {
+    console.log('🚀 Initializing dashboard...');
+    console.log('🌐 Backend URL set to:', window.backendUrl);
+    
+    // Test backend connection
+    if (window.backendUrl) {
+        fetch(`${window.backendUrl}/api/health`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Backend health check successful:', data);
+            })
+            .catch(error => {
+                console.error('❌ Backend health check failed:', error);
+            });
+    }
+    
     loadTransactions();
     loadGoals();
     updateIndependenceScore();
@@ -89,7 +104,38 @@ window.refreshDashboard = function() {
 
 async function loadTransactions() {
     try {
+        console.log('🔄 Loading transactions...');
+        console.log('🌐 Backend URL:', window.backendUrl);
+        
+        // Try to fetch from backend first
+        if (window.backendUrl) {
+            try {
+                console.log('📡 Attempting to fetch from backend...');
+                const response = await fetch(`${window.backendUrl}/api/transactions`);
+                console.log('📡 Backend response status:', response.status);
+                
+                if (response.ok) {
+                    const transactions = await response.json();
+                    console.log('✅ Backend transactions loaded:', transactions.length);
+                    // Store in localStorage for offline use
+                    localStorage.setItem('transactions', JSON.stringify(transactions));
+                    renderSpendingPieChart(transactions);
+                    renderWeeklyBarChart(transactions);
+                    return;
+                } else {
+                    console.warn('⚠️ Backend returned error status:', response.status);
+                }
+            } catch (apiError) {
+                console.log('⚠️ Backend API not accessible, using localStorage:', apiError);
+            }
+        } else {
+            console.log('⚠️ No backend URL configured');
+        }
+        
+        // Fallback to localStorage
+        console.log('📱 Falling back to localStorage...');
         const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+        console.log('📱 LocalStorage transactions:', transactions.length);
         renderSpendingPieChart(transactions);
         renderWeeklyBarChart(transactions);
     } catch (error) {
@@ -256,8 +302,39 @@ function renderWeeklyBarChart(transactions) {
 // ===== GOALS =====
 async function loadGoals() {
     try {
+        console.log('🔄 Loading goals...');
+        console.log('🌐 Backend URL:', window.backendUrl);
+        
+        // Try to fetch from backend first
+        if (window.backendUrl) {
+            try {
+                console.log('📡 Attempting to fetch from backend...');
+                const response = await fetch(`${window.backendUrl}/api/goals`);
+                console.log('📡 Backend response status:', response.status);
+                
+                if (response.ok) {
+                    const goals = await response.json();
+                    console.log('✅ Backend goals loaded:', goals.length);
+                    // Store in localStorage for offline use
+                    localStorage.setItem('goals', JSON.stringify(goals));
+                    goals = goals.map(goal => goal.id ? goal : { ...goal, id: Date.now().toString() + Math.random().toString(36).substr(2, 9) });
+                    renderGoals(goals);
+                    return;
+                } else {
+                    console.warn('⚠️ Backend returned error status:', response.status);
+                }
+            } catch (apiError) {
+                console.log('⚠️ Backend API not accessible, using localStorage:', apiError);
+            }
+        } else {
+            console.log('⚠️ No backend URL configured');
+        }
+        
+        // Fallback to localStorage
+        console.log('📱 Falling back to localStorage...');
         let goals = JSON.parse(localStorage.getItem('goals') || '[]');
         goals = goals.map(goal => goal.id ? goal : { ...goal, id: Date.now().toString() + Math.random().toString(36).substr(2, 9) });
+        console.log('📱 LocalStorage goals:', goals.length);
         renderGoals(goals);
     } catch (error) {
         console.error('Error loading goals:', error);
@@ -736,6 +813,30 @@ async function handleTransactionSubmit(event) {
     };
     
     try {
+        // Try to save to backend first
+        if (window.backendUrl) {
+            try {
+                const response = await fetch(`${window.backendUrl}/api/transactions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(transaction)
+                });
+                
+                if (response.ok) {
+                    const savedTransaction = await response.json();
+                    transaction._id = savedTransaction._id; // Store backend ID
+                    console.log('✅ Transaction saved to backend:', savedTransaction);
+                } else {
+                    console.warn('⚠️ Failed to save to backend, using localStorage only');
+                }
+            } catch (apiError) {
+                console.log('⚠️ Backend API not accessible, using localStorage only:', apiError);
+            }
+        }
+        
+        // Save to localStorage
         const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
         transactions.push(transaction);
         localStorage.setItem('transactions', JSON.stringify(transactions));
@@ -820,6 +921,30 @@ async function handleGoalSubmit(event) {
     };
     
     try {
+        // Try to save to backend first
+        if (window.backendUrl) {
+            try {
+                const response = await fetch(`${window.backendUrl}/api/goals`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(goal)
+                });
+                
+                if (response.ok) {
+                    const savedGoal = await response.json();
+                    goal._id = savedGoal._id; // Store backend ID
+                    console.log('✅ Goal saved to backend:', savedGoal);
+                } else {
+                    console.warn('⚠️ Failed to save to backend, using localStorage only');
+                }
+            } catch (apiError) {
+                console.log('⚠️ Backend API not accessible, using localStorage only:', apiError);
+            }
+        }
+        
+        // Save to localStorage
         const goals = JSON.parse(localStorage.getItem('goals') || '[]');
         goals.push(goal);
         localStorage.setItem('goals', JSON.stringify(goals));
@@ -1190,6 +1315,30 @@ async function handleProgressSubmit(event, goalId) {
         
         if (goalIndex !== -1) {
             goals[goalIndex].savedAmount = (goals[goalIndex].savedAmount || 0) + amount;
+            
+            // Try to update in backend first
+            if (window.backendUrl && goals[goalIndex]._id) {
+                try {
+                    const response = await fetch(`${window.backendUrl}/api/goals/${goals[goalIndex]._id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            savedAmount: goals[goalIndex].savedAmount
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log('✅ Goal progress updated in backend');
+                    } else {
+                        console.warn('⚠️ Failed to update goal progress in backend');
+                    }
+                } catch (apiError) {
+                    console.log('⚠️ Backend API not accessible, using localStorage only:', apiError);
+                }
+            }
+            
             localStorage.setItem('goals', JSON.stringify(goals));
             
             const updatedGoal = goals[goalIndex];

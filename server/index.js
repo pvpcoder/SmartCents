@@ -84,6 +84,24 @@ app.get('/api/transactions', async (req, res) => {
   }
 });
 
+// Update transaction
+app.put('/api/transactions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const transaction = await Transaction.findByIdAndUpdate(id, updates, { new: true });
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+    
+    res.json(transaction);
+  } catch (err) {
+    console.error("Error updating transaction:", err);
+    res.status(500).json({ error: "Failed to update transaction" });
+  }
+});
+
 /* -------------------- GOAL ROUTES -------------------- */
 
 // Create new goal
@@ -106,6 +124,24 @@ app.get('/api/goals', async (req, res) => {
   } catch (err) {
     console.error("Error fetching goals:", err);
     res.status(500).json({ error: "Failed to fetch goals" });
+  }
+});
+
+// Update goal
+app.put('/api/goals/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const goal = await Goal.findByIdAndUpdate(id, updates, { new: true });
+    if (!goal) {
+      return res.status(404).json({ error: "Goal not found" });
+    }
+    
+    res.json(goal);
+  } catch (err) {
+    console.error("Error updating goal:", err);
+    res.status(500).json({ error: "Failed to update goal" });
   }
 });
 

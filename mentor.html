@@ -138,7 +138,7 @@
                 const goals = JSON.parse(localStorage.getItem('goals') || '[]');
 
                 // Send question + financial context to backend
-                const res = await fetch(`${window.backendUrl || 'http://localhost:3000'}/api/chatbot`, {
+                const res = await fetch(`${window.backendUrl}/api/chatbot`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 

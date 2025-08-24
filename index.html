@@ -104,8 +104,6 @@
     </main>
 
       <script>
-
-
         function checkBackendConnection() {
           fetch(`${window.backendUrl}/api/health`)
             .then(response => response.json())
@@ -125,15 +123,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
-    
-    <script>
-                               if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    window.backendUrl = 'http://localhost:3000';
-                    console.log('🌐 Detected LOCAL environment - using localhost:3000');
-                } else {
-                    window.backendUrl = 'https://smartcents-64ma.onrender.com';
-                    console.log('🌐 Detected PRODUCTION environment - using production backend');
-               }
-    </script>
 </body>
 </html>
