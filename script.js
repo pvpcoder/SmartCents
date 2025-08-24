@@ -1,6 +1,5 @@
 let spendingPieChart = null;
 let weeklyBarChart = null;
-let scoreTrendChart = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     initializeApp();
@@ -417,250 +416,11 @@ function showScoreChange(sign, points, type) {
     }, 2000);
 }
 
-// Get score trend (last 24 hours for hackathon demo)
-function getScoreTrend() {
-    const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory') || '{}');
-    const hours = Object.keys(scoreHistory).sort().slice(-24);
-    
-    if (hours.length < 2) return 'insufficient data';
-    
-    const scores = hours.map(hour => scoreHistory[hour]);
-    const firstScore = scores[0];
-    const lastScore = scores[scores.length - 1];
-    const change = lastScore - firstScore;
-    
-    if (change > 2) return 'trending up';
-    else if (change < -2) return 'trending down';
-    else return 'stable';
-}
 
-// Render the score trend chart
-function renderScoreTrendChart() {
-    const ctx = document.getElementById('scoreTrendChart');
-    if (!ctx) {
-        console.log('❌ Chart canvas not found');
-        return;
-    }
-    
-    // Get score history for the last 24 hours
-    const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory') || '{}');
-    const hours = Object.keys(scoreHistory).sort().slice(-24);
-    
-    console.log('📊 Score history data:', scoreHistory);
-    console.log('🕐 Available hours:', hours);
-    console.log('📈 Chart.js available:', typeof Chart !== 'undefined');
-    
-    if (hours.length < 2) {
-        // Not enough data, show empty chart instead of placeholder
-        console.log('⚠️ Not enough data, showing empty chart');
-        
-        // Destroy existing chart if it exists
-        if (scoreTrendChart) {
-            scoreTrendChart.destroy();
-        }
-        
-        // Create empty line chart
-        scoreTrendChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['No Data Yet'],
-                datasets: [{
-                    label: 'Score',
-                    data: [44], // Use current score
-                    borderColor: '#00d9ff',
-                    backgroundColor: 'rgba(0, 217, 255, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#00d9ff',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: '#00d9ff',
-                        borderWidth: 1,
-                        cornerRadius: 6,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return `Score: ${context.parsed.y}/100`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        grid: { display: false },
-                        ticks: { color: '#6b7280', font: { size: 10 } }
-                    },
-                    y: {
-                        display: true,
-                        grid: { color: 'rgba(107, 114, 128, 0.1)', borderColor: 'rgba(107, 114, 128, 0.1)' },
-                        ticks: { color: '#6b7280', font: { size: 10 } },
-                        min: 0,
-                        max: 100
-                    }
-                },
-                interaction: { intersect: false, mode: 'index' },
-                elements: { point: { hoverBackgroundColor: '#00d9ff' } }
-            }
-        });
-        return;
-    }
-    
-    console.log('✅ Rendering chart with data:', hours);
-    
-    // Prepare data for the chart
-    const labels = hours.map(hour => {
-        const d = new Date(hour);
-        return `${d.getHours()}:00`;
-    });
-    
-    const data = hours.map(hour => scoreHistory[hour]);
-    
-    console.log('🏷️ Chart labels:', labels);
-    console.log('📊 Chart data:', data);
-    
-    // Destroy existing chart if it exists
-    if (scoreTrendChart) {
-        scoreTrendChart.destroy();
-    }
-    
-    try {
-        // Create new chart
-        scoreTrendChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Score',
-                    data: data,
-                    borderColor: '#00d9ff',
-                    backgroundColor: 'rgba(0, 217, 255, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#00d9ff',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: '#00d9ff',
-                        borderWidth: 1,
-                        cornerRadius: 6,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return `Score: ${context.parsed.y}/100`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            color: '#6b7280',
-                            font: {
-                                size: 10
-                            }
-                        }
-                    },
-                    y: {
-                        display: true,
-                        grid: {
-                            color: 'rgba(107, 114, 128, 0.1)',
-                            borderColor: 'rgba(107, 114, 128, 0.1)'
-                        },
-                        ticks: {
-                            color: '#6b7280',
-                            font: {
-                                size: 10
-                            },
-                            callback: function(value) {
-                                return value;
-                            }
-                        },
-                        min: Math.max(0, Math.min(...data) - 10),
-                        max: Math.min(100, Math.max(...data) + 10)
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                elements: {
-                    point: {
-                        hoverBackgroundColor: '#00d9ff'
-                    }
-                }
-            }
-        });
-        
-        console.log('✅ Chart created successfully');
-        
-        // Update trend indicator
-        updateTrendIndicator(data);
-        
-    } catch (error) {
-        console.error('❌ Error creating chart:', error);
-        ctx.parentElement.innerHTML = `
-            <div style="text-align: center; padding: 1rem 0;">
-                <div style="color: #e53e3e; font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
-                <p style="color: #e53e3e; font-size: 0.875rem; margin: 0;">Chart error: ${error.message}</p>
-            </div>
-        `;
-    }
-}
 
-// Update the trend indicator emoji based on score direction
-function updateTrendIndicator(scores) {
-    const trendIndicator = document.getElementById('trendIndicator');
-    if (!trendIndicator || scores.length < 2) return;
-    
-    const firstScore = scores[0];
-    const lastScore = scores[scores.length - 1];
-    const change = lastScore - firstScore;
-    
-    if (change > 2) {
-        trendIndicator.textContent = '📈';
-        trendIndicator.title = 'Score trending up';
-    } else if (change < -2) {
-        trendIndicator.textContent = '📉';
-        trendIndicator.title = 'Score trending down';
-    } else {
-        trendIndicator.textContent = '➡️';
-        trendIndicator.title = 'Score stable';
-    }
-}
+
+
+
 
 function calculateIndependenceScore(transactions = [], goals = []) {
     let score = 0;
@@ -808,56 +568,7 @@ async function generateAIMentorTip(transactions, goals) {
     }
 }
 
-function prepareFinancialDataForAI(transactions, goals) {
-    const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    const totalSavings = totalIncome - totalExpenses;
-    const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome * 100).toFixed(1) : 0;
-    const spendingRate = totalIncome > 0 ? (totalExpenses / totalIncome * 100).toFixed(1) : 0;
 
-    // Analyze spending categories
-    const categoryTotals = {};
-    transactions.filter(t => t.type === 'expense').forEach(t => {
-        categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-    });
-    
-    const topSpendingCategories = Object.entries(categoryTotals)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 3)
-        .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`);
-
-    // Analyze goals progress
-    const activeGoals = goals.filter(g => (g.savedAmount || 0) < g.targetAmount);
-    const completedGoals = goals.filter(g => (g.savedAmount || 0) >= g.targetAmount);
-
-    // Get recent spending trend (last 7 days vs previous 7 days)
-    const now = new Date();
-    const lastWeek = transactions.filter(t => {
-        const txDate = new Date(t.date);
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return txDate >= weekAgo && t.type === 'expense';
-    }).reduce((sum, t) => sum + t.amount, 0);
-
-    const previousWeek = transactions.filter(t => {
-        const txDate = new Date(t.date);
-        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return txDate >= twoWeeksAgo && txDate < weekAgo && t.type === 'expense';
-    }).reduce((sum, t) => sum + t.amount, 0);
-
-    const spendingTrend = lastWeek > previousWeek ? 'increased' : lastWeek < previousWeek ? 'decreased' : 'stable';
-
-    return `Income: $${totalIncome.toFixed(2)}
-Expenses: $${totalExpenses.toFixed(2)}
-Savings: $${totalSavings.toFixed(2)}
-Savings Rate: ${savingsRate}%
-Spending Rate: ${spendingRate}%
-Top Spending Categories: ${topSpendingCategories.join(', ')}
-Active Goals: ${activeGoals.length}
-Completed Goals: ${completedGoals.length}
-Recent Spending Trend: ${spendingTrend} (Last week: $${lastWeek.toFixed(2)}, Previous week: $${previousWeek.toFixed(2)})
-Total Transactions: ${transactions.length}`;
-}
 
 function generateMentorTip(transactions) {
     if (transactions.length === 0) {
@@ -1566,157 +1277,19 @@ window.closeAddProgressModal = closeAddProgressModal;
 window.resetAllGoals = resetAllGoals;
 window.resetAllTransactions = resetAllTransactions;
 window.toggleScoreLog = toggleScoreLog;
-window.debugScoreLog = debugScoreLog;
-window.addTestScoreChange = addTestScoreChange;
 
 
-// Debug function to test if everything is working
-window.testChallenges = function() {
-    console.log('Testing challenges...');
-    console.log('resetDailyChallenges function:', typeof resetDailyChallenges);
-    console.log('completeDailyChallenge function:', typeof completeDailyChallenge);
-    console.log('Current date key:', getCurrentDateKey());
-    
-    // Test if we can access localStorage
-    const testData = localStorage.getItem('test');
-    localStorage.setItem('test', 'working');
-    localStorage.removeItem('test');
-    console.log('localStorage test:', testData === null ? 'working' : 'error');
-    
-    alert('Check console for debug info!');
-};
 
-// Debug function to test score log functionality
-window.debugScoreLog = function() {
-    console.log('🔍 === SCORE LOG DEBUG ===');
-    
-    // Check localStorage
-    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-    const goals = JSON.parse(localStorage.getItem('goals') || '[]');
-    const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory') || '{}');
-    
-    console.log('📊 Current data:', {
-        transactions: transactions.length,
-        goals: goals.length,
-        scoreHistoryKeys: Object.keys(scoreHistory),
-        scoreHistoryLength: Object.keys(scoreHistory).length
-    });
-    
-    // Check DOM elements
-    const scoreElement = document.getElementById('independenceScore');
-    const logContainer = document.getElementById('scoreLogContainer');
-    
-    console.log('🏗️ DOM elements:', {
-        independenceScore: scoreElement ? scoreElement.textContent : 'not found',
-        scoreLogContainer: logContainer ? 'found' : 'not found'
-    });
-    
-    // Test functions
-    console.log('⚙️ Functions:', {
-        updateIndependenceScore: typeof updateIndependenceScore,
-        loadScoreChangeLog: typeof loadScoreChangeLog,
-        trackScoreHistory: typeof trackScoreHistory
-    });
-    
-    // Force update
-    console.log('🔄 Forcing score update...');
-    updateIndependenceScore();
-    
-    console.log('✅ Debug complete!');
-};
 
-// Function to manually add a test score change for debugging
-window.addTestScoreChange = function() {
-    console.log('🧪 Adding test score change...');
-    
-    const now = new Date();
-    const currentMinute = now.toISOString().slice(0, 16);
-    const previousMinute = new Date(now.getTime() - 5 * 60 * 1000).toISOString().slice(0, 16); // 5 minutes ago
-    
-    const minuteHistory = JSON.parse(localStorage.getItem('scoreMinuteHistory') || '{}');
-    
-    // Add a test score change
-    minuteHistory[previousMinute] = 50;
-    minuteHistory[currentMinute] = 88; // +38 change
-    
-    localStorage.setItem('scoreMinuteHistory', JSON.stringify(minuteHistory));
-    
-    console.log('✅ Test score change added:', { previousMinute, currentMinute, change: '+38' });
-    
-    // Force refresh the log
-    loadScoreChangeLog();
-};
 
-// Function to create test score data for debugging
-window.createTestScoreData = function() {
-    console.log('🧪 Creating test score data...');
-    
-    const now = new Date();
-    const minuteHistory = {};
-    
-    // Create 5 entries over the last hour
-    for (let i = 4; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 15 * 60 * 1000); // Every 15 minutes
-        const minuteKey = time.toISOString().slice(0, 16);
-        const score = 50 + (i * 8); // Score increases from 50 to 82
-        
-        minuteHistory[minuteKey] = score;
-        console.log(`📊 Created test entry: ${minuteKey} = ${score}`);
-    }
-    
-    localStorage.setItem('scoreMinuteHistory', JSON.stringify(minuteHistory));
-    console.log('✅ Test score data created with 5 entries');
-    
-    // Force refresh the log
-    loadScoreChangeLog();
-};
 
-// Function to manually trigger a score update for debugging
-window.forceScoreUpdate = function() {
-    console.log('🔄 Forcing score update...');
-    
-    // Get current data
-    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-    const goals = JSON.parse(localStorage.getItem('goals') || '[]');
-    
-    console.log('📊 Current data before update:', {
-        transactions: transactions.length,
-        goals: goals.length,
-        currentScore: document.getElementById('independenceScore')?.textContent
-    });
-    
-    // Force update
-    updateIndependenceScore();
-    
-    // Wait a bit and check the log
-    setTimeout(() => {
-        console.log('⏰ Checking score log after update...');
-        loadScoreChangeLog();
-    }, 500);
-};
 
-window.SmartCents = {
-    loadTransactions,
-    loadGoals,
-    updateIndependenceScore,
-    loadMentorTip,
-    handleTransactionSubmit,
-    handleGoalSubmit,
-    loadRecentTransactions,
-    loadGoalsProgress,
-    loadGoalPredictions,
-    loadPersonalizedAdvice,
-    loadSpendingAnalysis,
-    openAddProgressModal,
-    closeAddProgressModal,
-    resetAllGoals,
-    resetAllTransactions,
-    handleTransactionTypeChange,
-    calculateIndependenceScore,
-    initializeDailyChallenges,
-    resetDailyChallenges,
-    completeDailyChallenge
-};
+
+
+
+
+
+
 
 
 
@@ -1750,42 +1323,7 @@ function deleteGoal(goalId, goalName) {
         }
     }
 }
-// ===== CHATBOT LOGIC =====
-async function sendMessage() {
-    const inputEl = document.getElementById('chatbotInput');
-    const chatBox = document.getElementById('chatbotMessages');
-    const userMessage = inputEl.value.trim();
-    if (!userMessage) return;
-  
-    // show user message
-    chatBox.innerHTML += `<div class="user-message">${userMessage}</div>`;
-    inputEl.value = "";
-  
-    try {
-      // 🔥 NEW: grab financial data from localStorage
-      const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-      const goals = JSON.parse(localStorage.getItem('goals') || '[]');
-      const score = calculateIndependenceScore(transactions, goals);
-  
-      // send message + financial data to backend
-      const response = await fetch(`${window.backendUrl}/api/chatbot`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage,
-          transactions,
-          goals,
-          score
-        })
-      });
-  
-      const data = await response.json();
-      chatBox.innerHTML += `<div class="bot-message">${data.reply}</div>`;
-      chatBox.scrollTop = chatBox.scrollHeight;
-    } catch (err) {
-      chatBox.innerHTML += `<div class="bot-message error">❌ Error: ${err.message}</div>`;
-    }
-  }
+
   
 // Toggle score log expansion
 function toggleScoreLog() {
