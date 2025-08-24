@@ -2,20 +2,20 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const OpenAI = require('openai');
+const mongoose = require('mongoose');
+
+const Transaction = require('./models/Transaction');
+const Goal = require('./models/Goal');
 
 dotenv.config();
 
-const mongoose = require('mongoose');
-
+// ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => console.log('✅ Connected to MongoDB Atlas'))
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
-
+.catch((err) => console.error('❌ MongoDB connection error:', err));
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,7 +26,7 @@ const allowedOrigins = [
   "http://127.0.0.1:3000",
   "http://localhost:5500",
   "http://127.0.0.1:5500",
-  "https://smartcentsrecess5.netlify.app"  // 👈 your Netlify frontend
+  "https://smartcentsrecess5.netlify.app"
 ];
 
 app.use(cors({
@@ -59,7 +59,59 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'SmartCents AI Mentor Server is running', openai: 'Configured' });
 });
 
-// ✅ Mentor Tip endpoint
+/* -------------------- TRANSACTION ROUTES -------------------- */
+
+// Create new transaction
+app.post('/api/transactions', async (req, res) => {
+  try {
+    const transaction = new Transaction(req.body);
+    await transaction.save();
+    res.status(201).json(transaction);
+  } catch (err) {
+    console.error("Error saving transaction:", err);
+    res.status(500).json({ error: "Failed to save transaction" });
+  }
+});
+
+// Get all transactions
+app.get('/api/transactions', async (req, res) => {
+  try {
+    const transactions = await Transaction.find().sort({ date: -1 });
+    res.json(transactions);
+  } catch (err) {
+    console.error("Error fetching transactions:", err);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+
+/* -------------------- GOAL ROUTES -------------------- */
+
+// Create new goal
+app.post('/api/goals', async (req, res) => {
+  try {
+    const goal = new Goal(req.body);
+    await goal.save();
+    res.status(201).json(goal);
+  } catch (err) {
+    console.error("Error saving goal:", err);
+    res.status(500).json({ error: "Failed to save goal" });
+  }
+});
+
+// Get all goals
+app.get('/api/goals', async (req, res) => {
+  try {
+    const goals = await Goal.find().sort({ createdAt: -1 });
+    res.json(goals);
+  } catch (err) {
+    console.error("Error fetching goals:", err);
+    res.status(500).json({ error: "Failed to fetch goals" });
+  }
+});
+
+/* -------------------- AI ENDPOINTS -------------------- */
+
+// Mentor Tip
 app.post('/api/mentor-tip', async (req, res) => {
   try {
     const { transactions, goals } = req.body;
@@ -91,23 +143,15 @@ ${financialContext}`;
 
     const tip = completion.choices[0].message.content.trim();
 
-    res.json({
-      success: true,
-      tip: tip,
-      model: "gpt-4o-mini",
-      context: financialContext
-    });
+    res.json({ success: true, tip, model: "gpt-4o-mini", context: financialContext });
 
   } catch (error) {
     console.error('Error generating AI mentor tip:', error);
-    res.status(500).json({
-      error: 'Failed to generate AI mentor tip',
-      fallback: 'I apologize, but I\'m having trouble analyzing your finances right now. Please try again in a moment.'
-    });
+    res.status(500).json({ error: 'Failed to generate AI mentor tip' });
   }
 });
 
-// ✅ Chatbot endpoint
+// Chatbot
 app.post('/api/chatbot', async (req, res) => {
   try {
     const { message, transactions = [], goals = [], score = 0 } = req.body;
@@ -146,17 +190,14 @@ Independence Score: ${score}`;
   }
 });
 
-// ✅ Financial context builder
+/* -------------------- FINANCIAL CONTEXT BUILDER -------------------- */
 function buildFinancialContext(transactions, goals) {
-  if (!transactions || transactions.length === 0) {
-    return "No financial data available yet.";
-  }
+  if (!transactions || transactions.length === 0) return "No financial data available yet.";
 
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const totalSavings = totalIncome - totalExpenses;
   const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome * 100).toFixed(1) : 0;
-  const spendingRate = totalIncome > 0 ? (totalExpenses / totalIncome * 100).toFixed(1) : 0;
 
   const categoryTotals = {};
   transactions.filter(t => t.type === 'expense').forEach(t => {
@@ -171,37 +212,20 @@ function buildFinancialContext(transactions, goals) {
   const activeGoals = goals.filter(g => (g.savedAmount || 0) < g.targetAmount);
   const completedGoals = goals.filter(g => (g.savedAmount || 0) >= g.targetAmount);
 
-  const now = new Date();
-  const lastWeek = transactions.filter(t => {
-    const txDate = new Date(t.date);
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    return txDate >= weekAgo && t.type === 'expense';
-  }).reduce((sum, t) => sum + t.amount, 0);
-
-  const previousWeek = transactions.filter(t => {
-    const txDate = new Date(t.date);
-    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    return txDate >= twoWeeksAgo && txDate < weekAgo && t.type === 'expense';
-  }).reduce((sum, t) => sum + t.amount, 0);
-
-  const spendingTrend = lastWeek > previousWeek ? 'increased' : lastWeek < previousWeek ? 'decreased' : 'stable';
-
   return `Income: $${totalIncome.toFixed(2)}
 Expenses: $${totalExpenses.toFixed(2)}
 Savings: $${totalSavings.toFixed(2)}
 Savings Rate: ${savingsRate}%
-Spending Rate: ${spendingRate}%
 Top Spending Categories: ${topSpendingCategories.join(', ')}
 Active Goals: ${activeGoals.length}
 Completed Goals: ${completedGoals.length}
-Recent Spending Trend: ${spendingTrend} (Last week: $${lastWeek.toFixed(2)}, Previous week: $${previousWeek.toFixed(2)})
 Total Transactions: ${transactions.length}`;
 }
 
+/* -------------------- START SERVER -------------------- */
 app.listen(PORT, () => {
   console.log(`🚀 SmartCents AI Mentor Server running on port ${PORT}`);
   console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
-  console.log(`✅ Mentor Tips: POST http://localhost:${PORT}/api/mentor-tip`);
-  console.log(`✅ Chatbot: POST http://localhost:${PORT}/api/chatbot`);
+  console.log(`✅ Transactions: GET/POST http://localhost:${PORT}/api/transactions`);
+  console.log(`✅ Goals: GET/POST http://localhost:${PORT}/api/goals`);
 });
