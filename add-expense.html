@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCents - Add Transaction</title>
+    <link rel="stylesheet" href="add-expense.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <style>
+       
+        .receipt-scan-container {
+            border: 2px dashed #ccc;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .camera-container, .image-preview {
+            margin-bottom: 1rem;
+        }
+        
+        .camera-container video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+        }
+        
+        .scan-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .scan-progress {
+            margin-top: 1rem;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #667eea;
+            width: 0%;
+            animation: progressAnimation 2s infinite;
+        }
+        
+        @keyframes progressAnimation {
+            0% { width: 0%; }
+            50% { width: 50%; }
+            100% { width: 100%; }
+        }
+        
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            display: none;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .extracted-data {
+            margin: 15px 0;
+        }
+        
+        .data-item {
+            margin-bottom: 10px;
+        }
+        
+        .data-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .data-item input, .data-item select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .scan-buttons {
+                flex-direction: column;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .message-success {
+            background-color: #48bb78;
+        }
+        
+        .message-error {
+            background-color: #e53e3e;
+        }
+        
+        .message-info {
+            background-color: #667eea;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="backbutton">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="nav-brand">SmartCents</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="add-expense.html" class="nav-link active">Add Expense</a>
+            <a href="set-goal.html" class="nav-link">Set Goal</a>
+            <a href="mentor.html" class="nav-link">Mentor</a>
+            <a href="budget-game.html" class="nav-link">Game</a>
+            <a href="skill-tree.html" class="nav-link">Skill Path</a>
+        </div>
+        </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1>Add Transaction</h1>
+            <p class="tagline">Track your income and expenses</p>
+        </header>
+
+        <div class="form-container">
+            <form id="transactionForm" class="transaction-form">
+             
+                <div class="form-group">
+                    <label>Scan Receipt (Optional)</label>
+                    <div class="receipt-scan-container">
+                        <div id="cameraContainer" class="camera-container" style="display: none;">
+                            <video id="cameraPreview" autoplay playsinline></video>
+                            <canvas id="captureCanvas" style="display: none;"></canvas>
+                        </div>
+                        <div id="imagePreview" class="image-preview" style="display: none;">
+                            <img id="previewImg" src="" alt="Receipt preview">
+                        </div>
+                        <div class="scan-buttons">
+                            <button type="button" id="startCameraBtn" class="btn btn-outline">
+                                📷 Open Camera
+                            </button>
+                            <button type="button" id="uploadReceiptBtn" class="btn btn-outline">
+                                📁 Upload Receipt
+                            </button>
+                            <input type="file" id="receiptUpload" accept="image/*" capture="environment" style="display: none;">
+                        </div>
+                        <div id="scanProgress" class="scan-progress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                            <p>Scanning receipt...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="transactionType">Transaction Type</label>
+                    <select id="transactionType" name="transactionType" required>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <div class="amount-input">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" id="amount" name="amount" step="0.01" min="0" required placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="form-group" id="categoryGroup">
+                    <label for="category">Category</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select a category</option>
+                        <option value="Salary">Salary</option>
+                        <option value="Allowance">Allowance</option>
+                        <option value="Gift">Gift</option>
+                        <option value="Investment">Investment</option>
+                        <option value="Other Income">Other Income</option>
+                    </select>
+                    <small class="category-help">Select a category for your income source</small>
+                </div>
+                
+                <div class="form-group" id="expenseCategoryGroup" style="display: none;">
+                    <label for="expenseCategory">Expense Category</label>
+                    <select id="expenseCategory" name="expenseCategory">
+                        <option value="">Select a category</option>
+                        <option value="Food">Food</option>
+                        <option value="Fun">Fun</option>
+                        <option value="Clothes">Clothes</option>
+                        <option value="Savings">Savings</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Education">Education</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <small class="category-help">Select a category for your expense</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Note (Optional)</label>
+                    <textarea id="note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Add Transaction</button>
+                    <button type="button" onclick="resetAllTransactions()" class="btn btn-outline" style="background-color: #e53e3e; color: white; border-color: #e53e3e;">Reset All Transactions</button>
+                    <a href="index.html" class="btn btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div> 
+        <div class="goals-row" style="margin-top:1.5rem;">
+            <div class="goal-prediction">
+                <h3>Goal Prediction</h3>
+                <p class="muted">Estimated progress vs target</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="--progress:65%;"></div>
+                </div>
+                <p class="progress-text">65%</p>
+            </div>
+
+            <div class="your-goals-progress">
+                <h3>Your Goals Progress</h3>
+                <p class="muted">Active goals overview</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="--progress:42%;"></div>
+                </div>
+                <p class="progress-text">42%</p>
+            </div>
+
+            <div class="create-new-goal">
+                <h3>Create New Goal</h3>
+                <p class="muted">Start saving towards something</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="--progress:0%;"></div>
+                </div>
+                <a href="set-goal.html" class="btn btn-primary" style="margin-top:.75rem;">Create Goal</a>
+            </div>
+        </div>
+
+        <div class="recent-transactions">
+            <h2>Recent Transactions</h2>
+            <div id="transactionsList" class="transactions-list">
+                <p class="loading">Loading recent transactions...</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="receiptReviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Review Receipt Details</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>We've extracted these details from your receipt. Please review and make any necessary changes.</p>
+                <div class="extracted-data">
+                    <div class="data-item">
+                        <label>Amount:</label>
+                        <input type="number" id="extractedAmount" step="0.01" min="0">
+                    </div>
+                    <div class="data-item">
+                        <label>Date:</label>
+                        <input type="date" id="extractedDate">
+                    </div>
+                    <div class="data-item">
+                        <label>Category:</label>
+                        <select id="extractedCategory">
+                            <option value="Food">Food</option>
+                            <option value="Fun">Fun</option>
+                            <option value="Clothes">Clothes</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Education">Education</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="data-item">
+                        <label>Note:</label>
+                        <input type="text" id="extractedNote" placeholder="Add note (e.g., store name)">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="useExtractedData" class="btn btn-primary">Use These Details</button>
+                    <button id="cancelExtractedData" class="btn btn-outline">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+    </script>
+
+    <script src="script.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+       
+            initReceiptScanning();
+           
+            const dateInput = document.getElementById('date');
+            if (dateInput) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+        });
+
+        function initReceiptScanning() {
+            const startCameraBtn = document.getElementById('startCameraBtn');
+            const uploadReceiptBtn = document.getElementById('uploadReceiptBtn');
+            const receiptUpload = document.getElementById('receiptUpload');
+            const cameraContainer = document.getElementById('cameraContainer');
+            const cameraPreview = document.getElementById('cameraPreview');
+            const captureCanvas = document.getElementById('captureCanvas');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            const scanProgress = document.getElementById('scanProgress');
+            const reviewModal = document.getElementById('receiptReviewModal');
+            const closeModal = document.querySelector('.close');
+            const useExtractedDataBtn = document.getElementById('useExtractedData');
+            const cancelExtractedDataBtn = document.getElementById('cancelExtractedData');
+
+            let stream = null;
+
+            startCameraBtn.addEventListener('click', async function() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' }, 
+                        audio: false 
+                    });
+                    cameraPreview.srcObject = stream;
+                    cameraContainer.style.display = 'block';
+                    imagePreview.style.display = 'none';
+                    
+                    startCameraBtn.textContent = '📸 Capture Receipt';
+                    startCameraBtn.onclick = capturePhoto;
+                    
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    showMessage('Could not access camera. Please check permissions.', 'error');
+                }
+            });
+
+            uploadReceiptBtn.addEventListener('click', function() {
+                receiptUpload.click();
+            });
+
+            receiptUpload.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        cameraContainer.style.display = 'none';
+                        
+                        processReceiptImage(e.target.result);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            function capturePhoto() {
+                const context = captureCanvas.getContext('2d');
+                captureCanvas.width = cameraPreview.videoWidth;
+                captureCanvas.height = cameraPreview.videoHeight;
+                context.drawImage(cameraPreview, 0, 0, captureCanvas.width, captureCanvas.height);
+                
+                // Convert to data URL and process
+                const imageData = captureCanvas.toDataURL('image/jpeg');
+                previewImg.src = imageData;
+                imagePreview.style.display = 'block';
+                cameraContainer.style.display = 'none';
+                
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                
+                startCameraBtn.textContent = '📷 Open Camera';
+                startCameraBtn.onclick = function() {
+                    startCameraBtn.click();
+                };
+                
+                processReceiptImage(imageData);
+            }
+
+            async function processReceiptImage(imageData) {
+                scanProgress.style.display = 'block';
+                
+                try {
+                    const { data: { text } } = await Tesseract.recognize(
+                        imageData,
+                        'eng',
+                        { logger: m => console.log(m) }
+                    );
+                    
+                    const extractedData = parseReceiptText(text);
+                    
+                    showReviewModal(extractedData);
+                    
+                } catch (error) {
+                    console.error('Error processing receipt:', error);
+                    showMessage('Failed to process receipt. Please try again or enter details manually.', 'error');
+                } finally {
+                    scanProgress.style.display = 'none';
+                }
+            }
+
+            function parseReceiptText(text) {
+                console.log("Extracted text:", text);
+                
+                const amountRegex = /(total|amount|balance|amt|due)[\s:]*[$]?\s*(\d+\.\d{2})/gi;
+                const amountMatches = [...text.matchAll(amountRegex)];
+                let amount = null;
+                
+                if (amountMatches.length > 0) {
+
+                    amount = parseFloat(amountMatches[amountMatches.length - 1][2]);
+                } else {
+        
+                    const currencyRegex = /[$]?\s*(\d+\.\d{2})/g;
+                    const currencyMatches = [...text.matchAll(currencyRegex)];
+                    if (currencyMatches.length > 0) {
+                  
+                        const amounts = currencyMatches.map(match => parseFloat(match[1]));
+                        amount = Math.max(...amounts);
+                    }
+                }
+                
+                const dateRegex = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})|(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/g;
+                const dateMatches = text.match(dateRegex);
+                let date = new Date().toISOString().split('T')[0];
+                
+                if (dateMatches && dateMatches.length > 0) {
+            
+                    const dateStr = dateMatches[0];
+             
+                    if (dateStr.includes('/')) {
+                        const parts = dateStr.split('/');
+                        if (parts[0].length === 4) {
+                            date = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                        } else {
+                            date = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                        }
+                    } else if (dateStr.includes('-')) {
+                        const parts = dateStr.split('-');
+                        if (parts[0].length === 4) {
+                            date = dateStr;
+                        } else {
+                            date = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                        }
+                    }
+                }
+                
+    
+                const merchantRegex = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)(?:\s+(STORE|SHOP|MARKET|RESTAURANT))?/gi;
+                const merchantMatches = text.match(merchantRegex);
+                let merchant = null;
+                
+                if (merchantMatches && merchantMatches.length > 0) {
+                  
+                    const commonWords = ['Total', 'Amount', 'Date', 'Time', 'Receipt', 'Card', 'Cash', 'Change', 'Subtotal', 'Tax'];
+                    merchant = merchantMatches.find(match => 
+                        !commonWords.includes(match.trim()) && match.trim().length > 3
+                    );
+                }
+                
+                return {
+                    amount: amount,
+                    date: date,
+                    merchant: merchant,
+                    rawText: text
+                };
+            }
+
+            function showReviewModal(data) {
+                document.getElementById('extractedAmount').value = data.amount || '';
+                document.getElementById('extractedDate').value = data.date;
+                document.getElementById('extractedNote').value = data.merchant || '';
+                
+                reviewModal.style.display = 'flex';
+            }
+
+            closeModal.addEventListener('click', function() {
+                reviewModal.style.display = 'none';
+            });
+
+            useExtractedDataBtn.addEventListener('click', function() {
+                const amount = document.getElementById('extractedAmount').value;
+                const date = document.getElementById('extractedDate').value;
+                const category = document.getElementById('extractedCategory').value;
+                const note = document.getElementById('extractedNote').value;
+                
+                if (amount) {
+                    document.getElementById('amount').value = amount;
+                    document.getElementById('transactionType').value = 'expense';
+                    handleTransactionTypeChange(); // Update category visibility
+                }
+                
+                if (date) document.getElementById('date').value = date;
+                if (category) document.getElementById('expenseCategory').value = category;
+                if (note) document.getElementById('note').value = `Purchase at ${note}`;
+                
+                reviewModal.style.display = 'none';
+                showMessage('Receipt data applied to form! Please review before submitting.', 'success');
+            });
+
+        
+            cancelExtractedDataBtn.addEventListener('click', function() {
+                reviewModal.style.display = 'none';
+            });
+
+            window.addEventListener('click', function(event) {
+                if (event.target === reviewModal) {
+                    reviewModal.style.display = 'none';
+                }
+            });
+        }
+
+        function showMessage(message, type = 'info') {
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function handleTransactionTypeChange() {
+            const transactionType = document.getElementById('transactionType').value;
+            const incomeGroup = document.getElementById('categoryGroup');
+            const expenseGroup = document.getElementById('expenseCategoryGroup');
+            const incomeSelect = document.getElementById('category');
+            const expenseSelect = document.getElementById('expenseCategory');
+            
+            if (transactionType === 'income') {
+
+                incomeGroup.style.display = 'block';
+                expenseGroup.style.display = 'none';
+                
+
+                incomeSelect.required = true;
+                expenseSelect.required = false;
+                
+                expenseSelect.value = '';
+            } else {
+                incomeGroup.style.display = 'none';
+                expenseGroup.style.display = 'block';
+                
+                incomeSelect.required = false;
+                expenseSelect.required = true;
+                
+                incomeSelect.value = '';
+            }
+        }
+
+        // Make function globally available
+        window.handleTransactionTypeChange = handleTransactionTypeChange;
+    </script>
+</body>
+</html>

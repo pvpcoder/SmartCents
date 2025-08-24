@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCents - Financial Mentor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="mentor.css">
+</head>
+<body>
+    
+    <nav class="navbar">
+        <a href="index.html" class="backbutton">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="nav-brand">SmartCents</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="add-expense.html" class="nav-link">Add Expense/Income</a>
+            <a href="set-goal.html" class="nav-link">Set Goal</a>
+            <a href="mentor.html" class="nav-link active">Mentor</a>
+            <a href="budget-game.html" class="nav-link">Game</a>
+            <a href="skill-tree.html" class="nav-link">Skill Path</a>
+        </div>
+  </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <div class="title">
+                <h1>Your Financial Mentor</h1>
+                <p class="tagline">Personalized advice for your financial journey</p>
+            </div>
+
+            <div class="mentor-container">
+                <div class="card personalized-advice-card">
+                    <h2>Personalized Financial Advice</h2>
+                    <div id="personalizedAdvice">
+                        <p></p>
+                    </div>
+                    
+                    <!-- ✅ Chatbot Section moved here -->
+                    <div class="chatbot-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <h3>Ask the Mentor 🤖</h3>
+                        <div class="form-group">
+                            <textarea id="chatbotInput" rows="3" placeholder="Ask me anything about saving, budgeting, or goals..." style="width: 100%; margin-bottom: 10px;"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button id="chatbotSend" class="btn btn-primary">Ask</button>
+                        </div>
+                        <div id="chatbotResponse" class="analysis-content">
+                            <p>Type a question above to chat with your mentor.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="spending-analysis-card">
+                    <h2>Spending Analysis</h2>
+                    <div id="spendingAnalysis">
+                        <p>Loading your spending analysis...</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="card challenges-card">
+            <h2>Daily Challenges</h2>
+            <p class="challenge-intro">Complete these challenges today to boost your independence score!</p>
+            
+            <div id="dailyChallenges" class="challenges-list">
+                <div class="challenge-item">
+                    <div class="challenge-header">
+                        <h3>Loading challenges...</h3>
+                        <span class="difficulty-badge">Loading...</span>
+                    </div>
+                    <p class="challenge-description">Please wait while we load today's challenges...</p>
+                    <div class="challenge-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/0</span>
+                    </div>
+                    <div class="challenge-actions">
+                        <button class="challenge-btn" disabled>Loading...</button>
+                    </div>
+                </div>
+            </div>
+            
+                         <div class="challenge-actions-footer">
+                 <button onclick="resetDailyChallenges()" class="btn btn-outline">Reset Today's Progress</button>
+                 <br><br>
+                 <small class="challenge-note">Challenges reset every day at midnight</small>
+             </div>
+        </div>
+
+
+
+        <div class="lastcard">
+            <h2>Financial Tips</h2>
+            <p id="desc2">Suggestions on how to manage your money:</p>
+            <div class="tips-content">
+                <div class="tip-item">
+                    <h3>50/30/20 Rule</h3>
+                    <p>Allocate 50% of income to needs, 30% to wants, and 20% to savings.</p>
+                </div>
+                <div class="tip-item">
+                    <h3>Emergency Fund</h3>
+                    <p>Build an emergency fund with 3-6 months of living expenses.</p>
+                </div>
+                <div class="tip-item">
+                    <h3>Pay Yourself First</h3>
+                    <p>Set aside savings before spending on other things.</p>
+                </div>
+                <div class="tip-item">
+                    <h3>Track Your Progress</h3>
+                    <p>Regularly review your spending and savings to stay on track.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        // ✅ Enhanced Chatbot integration with financial context
+        document.getElementById("chatbotSend").addEventListener("click", async () => {
+            const input = document.getElementById("chatbotInput").value.trim();
+            const responseBox = document.getElementById("chatbotResponse");
+
+            if (!input) {
+                responseBox.innerHTML = "<p style='color:#fca5a5'>Please enter a question.</p>";
+                return;
+            }
+
+            responseBox.innerHTML = "<p class='loading'>Analyzing your finances and thinking...</p>";
+
+            try {
+                // Get user's financial data from localStorage (same as dashboard)
+                const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+
+                // Send question + financial context to backend
+                const res = await fetch(`${window.backendUrl || 'http://localhost:3000'}/api/chatbot`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        message: input,
+                        transactions: transactions,
+                        goals: goals
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    // Clean up asterisks and convert markdown-style formatting to HTML
+                    const cleanedReply = data.reply
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Convert **text** to <strong>text</strong>
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')              // Convert *text* to <em>text</em>
+                        .replace(/\*/g, '');                               // Remove any remaining asterisks
+                    responseBox.innerHTML = `<p><strong>🤖 AI Mentor:</strong> ${cleanedReply}</p>`;
+                } else {
+                    responseBox.innerHTML = "<p style='color:#fca5a5'>Error: Could not get a response.</p>";
+                }
+            } catch (err) {
+                console.error("Chatbot error:", err);
+                responseBox.innerHTML = "<p style='color:#fca5a5'>Server error. Try again later.</p>";
+            }
+        });
+    </script>
+</body>
+</html>

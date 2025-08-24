@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCents - Set Savings Goal</title>
+    <link rel="icon" type="image/png" href="ChatGPT Image Aug 23, 2025, 06_04_58 PM.png">
+    <link rel="stylesheet" href="set-goal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="backbutton">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="nav-brand">SmartCents</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="add-expense.html" class="nav-link">Add Expense</a>
+            <a href="set-goal.html" class="nav-link active">Set Goal</a>
+            <a href="mentor.html" class="nav-link">Mentor</a>
+            <a href="budget-game.html" class="nav-link">Game</a>
+            <a href="skill-tree.html" class="nav-link">Skill Path</a>
+        </div>
+  </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1>Set Savings Goal</h1>
+            <p class="tagline">Plan your financial future</p>
+        </header>
+
+        <div class="goals-container">
+            <div class="card goal-form-card">
+                <h2>Create New Goal</h2>
+                <form id="goalForm" class="goal-form">
+                    <div class="form-group">
+                        <label for="goalName">Goal Name</label>
+                        <input type="text" id="goalName" name="goalName" required placeholder="e.g., New Phone, College Fund">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="targetAmount">Target Amount</label>
+                        <div class="amount-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" id="targetAmount" name="targetAmount" step="0.01" min="0" required placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="targetDate">Target Date (Optional)</label>
+                        <input type="date" id="targetDate" name="targetDate">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="goalNote">Description (Optional)</label>
+                        <textarea id="goalNote" name="goalNote" rows="3" placeholder="Why is this goal important to you?"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create Goal</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card goals-progress-card" aria-live="polite">
+                <h2>Your Goals Progress</h2>
+                <div id="goalsProgress" class="goals-progress">
+                    <div class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>Loading your goals...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card prediction-card" aria-live="polite">
+                <h2>Goal Predictions</h2>
+                <div id="goalPredictions" class="goal-predictions">
+                    <div class="prediction-item" role="article" aria-label="Prediction for New Phone">
+                        <div class="pred-left">
+                            <div class="pred-title">New Phone</div>
+                            <div class="pred-sub">Based on recent savings & transactions</div>
+                        </div>
+                        <div class="pred-right">
+                            <div class="pred-value">Projected in <strong>8 months</strong></div>
+                            <div class="pred-advice">Recommended monthly saving: <strong>$95</strong></div>
+                        </div>
+                    </div>
+
+                    <p class="no-predictions">Add goals and transactions to see personalized predictions</p>
+                </div>
+            </div>
+         </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>

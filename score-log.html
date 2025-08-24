@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCents - Score Log</title>
+    <link rel="icon" type="image/png" href="ChatGPT Image Aug 23, 2025, 06_04_58 PM.png">
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="homepage.html" class="backbutton">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="nav-brand">SmartCents</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="add-expense.html" class="nav-link">Add Expense</a>
+            <a href="set-goal.html" class="nav-link">Set Goal</a>
+            <a href="mentor.html" class="nav-link">Mentor</a>
+            <a href="budget-game.html" class="nav-link">Game</a>
+            <a href="score-log.html" class="nav-link">Score Log</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1>Independence Score Log</h1>
+            <p class="tagline">Track every change and understand your financial journey.</p>
+        </header>
+
+        <div class="score-log-container">
+            <!-- Current Score Summary -->
+            <div class="current-score-card">
+                <h2>Current Independence Score</h2>
+                <div class="score-display-large">
+                    <span id="currentScore" class="score-number-large">0</span>
+                    <span class="score-max-large">/100</span>
+                </div>
+                <div class="score-summary">
+                    <div class="score-stat">
+                        <span class="stat-label">Today's Change:</span>
+                        <span id="todayChange" class="stat-value">+0</span>
+                    </div>
+                    <div class="score-stat">
+                        <span class="stat-label">This Week:</span>
+                        <span id="weekChange" class="stat-value">+0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score Change Log -->
+            <div class="score-log-card">
+                <div class="log-header">
+                    <h2>Score Change History</h2>
+                    <div class="log-filters">
+                        <button id="allChanges" class="filter-btn active" onclick="filterChanges('all')">All</button>
+                        <button id="positiveChanges" class="filter-btn" onclick="filterChanges('positive')">📈 Gains</button>
+                        <button id="negativeChanges" class="filter-btn" onclick="filterChanges('negative')">📉 Losses</button>
+                        <button id="recentChanges" class="filter-btn" onclick="filterChanges('recent')">Recent</button>
+                    </div>
+                </div>
+                
+                <div id="scoreLogList" class="score-log-list">
+                    <div class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>Loading score history...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score Insights -->
+            <div class="score-insights-card">
+                <h2>Score Insights</h2>
+                <div id="scoreInsights" class="insights-content">
+                    <div class="insight-item">
+                        <div class="insight-icon">💡</div>
+                        <div class="insight-text">
+                            <h4>Start Tracking</h4>
+                            <p>Begin logging your income and expenses to see your first score changes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize the score log page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeScoreLog();
+        });
+
+        function initializeScoreLog() {
+            updateCurrentScore();
+            loadScoreLog();
+            loadScoreInsights();
+        }
+
+        function updateCurrentScore() {
+            const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+            const currentScore = calculateIndependenceScore(transactions, goals);
+            
+            document.getElementById('currentScore').textContent = currentScore;
+            
+            // Calculate today's change
+            const todayChange = calculateTodayChange();
+            const todayElement = document.getElementById('todayChange');
+            todayElement.textContent = todayChange >= 0 ? `+${todayChange}` : `${todayChange}`;
+            todayElement.className = `stat-value ${todayChange >= 0 ? 'positive' : 'negative'}`;
+            
+            // Calculate week's change
+            const weekChange = calculateWeekChange();
+            const weekElement = document.getElementById('weekChange');
+            weekElement.textContent = weekChange >= 0 ? `+${weekChange}` : `${weekChange}`;
+            weekElement.className = `stat-value ${weekChange >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        function calculateTodayChange() {
+            const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory') || '{}');
+            const today = new Date().toISOString().split('T')[0];
+            const todayScores = Object.keys(scoreHistory)
+                .filter(hour => hour.startsWith(today))
+                .sort();
+            
+            if (todayScores.length < 2) return 0;
+            
+            const firstScore = scoreHistory[todayScores[0]];
+            const lastScore = scoreHistory[todayScores[todayScores.length - 1]];
+            return lastScore - firstScore;
+        }
+
+        function calculateWeekChange() {
+            const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory') || '{}');
+            const now = new Date();
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            const weekScores = Object.keys(scoreHistory)
+                .filter(hour => new Date(hour) >= weekAgo)
+                .sort();
+            
+            if (weekScores.length < 2) return 0;
+            
+            const firstScore = scoreHistory[weekScores[0]];
+            const lastScore = scoreHistory[weekScores[weekScores.length - 1]];
+            return lastScore - firstScore;
+        }
+
+        function loadScoreLog() {
+            const scoreHistory = JSON.parse(localStorage.getItem('scoreHistory') || '{}');
+            const logList = document.getElementById('scoreLogList');
+            
+            if (Object.keys(scoreHistory).length === 0) {
+                logList.innerHTML = `
+                    <div class="no-log-data">
+                        <div class="no-data-icon">📊</div>
+                        <h3>No Score History Yet</h3>
+                        <p>Start tracking your finances to see your independence score changes here.</p>
+                        <a href="add-expense.html" class="btn btn-primary">Add Your First Transaction</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedHours = Object.keys(scoreHistory).sort();
+            const logEntries = [];
+            
+            for (let i = 1; i < sortedHours.length; i++) {
+                const currentHour = sortedHours[i];
+                const previousHour = sortedHours[i - 1];
+                const currentScore = scoreHistory[currentHour];
+                const previousScore = scoreHistory[previousHour];
+                const change = currentScore - previousScore;
+                
+                if (change !== 0) {
+                    const changeReason = getScoreChangeReason(change, currentHour, previousHour);
+                    logEntries.push({
+                        timestamp: currentHour,
+                        score: currentScore,
+                        change: change,
+                        reason: changeReason
+                    });
+                }
+            }
+            
+            renderScoreLog(logEntries);
+        }
+
+        function getScoreChangeReason(change, currentHour, previousHour) {
+            const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+            
+            // Check for recent transactions
+            const recentTransactions = transactions.filter(t => {
+                const txTime = new Date(t.timestamp);
+                const hourTime = new Date(currentHour);
+                const diffHours = Math.abs(txTime - hourTime) / (1000 * 60 * 60);
+                return diffHours <= 1;
+            });
+            
+            // Check for goal progress
+            const recentGoals = goals.filter(g => {
+                // This would need to track goal progress history
+                return false; // Placeholder
+            });
+            
+            // Check for daily challenges
+            const dateKey = new Date(currentHour).toISOString().split('T')[0];
+            const dailyChallenges = localStorage.getItem(`dailyChallenges_${dateKey}`);
+            
+            if (recentTransactions.length > 0) {
+                const income = recentTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+                const expenses = recentTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+                
+                if (income > 0) {
+                    return `Added income: $${income.toFixed(2)}`;
+                } else if (expenses > 0) {
+                    return `Added expense: $${expenses.toFixed(2)}`;
+                }
+            }
+            
+            if (dailyChallenges) {
+                const challenges = JSON.parse(dailyChallenges);
+                const completedChallenges = challenges.filter(c => c.completed);
+                if (completedChallenges.length > 0) {
+                    const points = completedChallenges.reduce((sum, c) => sum + c.points, 0);
+                    return `Completed ${completedChallenges.length} daily challenge(s): +${points} points`;
+                }
+            }
+            
+            // Generic reasons based on score change
+            if (change > 0) {
+                return "Score increased due to improved financial behavior";
+            } else {
+                return "Score decreased due to financial activity";
+            }
+        }
+
+        function renderScoreLog(logEntries) {
+            const logList = document.getElementById('scoreLogList');
+            
+            if (logEntries.length === 0) {
+                logList.innerHTML = `
+                    <div class="no-log-data">
+                        <div class="no-data-icon">📊</div>
+                        <h3>No Score Changes Yet</h3>
+                        <p>Your independence score hasn't changed yet. Start tracking finances to see changes here.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const logHTML = logEntries.reverse().map(entry => {
+                const date = new Date(entry.timestamp);
+                const timeString = date.toLocaleString();
+                const changeClass = entry.change > 0 ? 'positive' : 'negative';
+                const changeIcon = entry.change > 0 ? '📈' : '📉';
+                
+                return `
+                    <div class="log-entry ${changeClass}">
+                        <div class="log-header-row">
+                            <div class="log-time">${timeString}</div>
+                            <div class="log-score">
+                                <span class="score-before">${entry.score - entry.change}</span>
+                                <span class="score-arrow">→</span>
+                                <span class="score-after">${entry.score}</span>
+                            </div>
+                            <div class="log-change ${changeClass}">
+                                ${changeIcon} ${entry.change > 0 ? '+' : ''}${entry.change}
+                            </div>
+                        </div>
+                        <div class="log-reason">
+                            <strong>Reason:</strong> ${entry.reason}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            logList.innerHTML = logHTML;
+        }
+
+        function filterChanges(filterType) {
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter logic would go here
+            // For now, just reload the log
+            loadScoreLog();
+        }
+
+        function loadScoreInsights() {
+            const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            const goals = JSON.parse(localStorage.getItem('goals') || '[]');
+            const insightsContainer = document.getElementById('scoreInsights');
+            
+            if (transactions.length === 0) {
+                insightsContainer.innerHTML = `
+                    <div class="insight-item">
+                        <div class="insight-icon">💡</div>
+                        <div class="insight-text">
+                            <h4>Start Tracking</h4>
+                            <p>Begin logging your income and expenses to see your first score changes.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const insights = generateScoreInsights(transactions, goals);
+            insightsContainer.innerHTML = insights;
+        }
+
+        function generateScoreInsights(transactions, goals) {
+            const insights = [];
+            
+            // Transaction insights
+            if (transactions.length < 5) {
+                insights.push(`
+                    <div class="insight-item">
+                        <div class="insight-icon">📝</div>
+                        <div class="insight-text">
+                            <h4>Track More Transactions</h4>
+                            <p>You've logged ${transactions.length} transactions. Track at least 5 to improve your score.</p>
+                        </div>
+                    </div>
+                `);
+            }
+            
+            // Savings insights
+            const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            const savings = income - expenses;
+            
+            if (savings < 0) {
+                insights.push(`
+                    <div class="insight-item warning">
+                        <div class="insight-icon">⚠️</div>
+                        <div class="insight-text">
+                            <h4>Negative Savings</h4>
+                            <p>You're spending more than you earn. Consider reducing expenses or increasing income.</p>
+                        </div>
+                    </div>
+                `);
+            } else if (savings > 0) {
+                insights.push(`
+                    <div class="insight-item positive">
+                        <div class="insight-icon">✅</div>
+                        <div class="insight-text">
+                            <h4>Great Savings!</h4>
+                            <p>You're saving $${savings.toFixed(2)}. Keep up the excellent financial habits!</p>
+                        </div>
+                    </div>
+                `);
+            }
+            
+            // Goals insights
+            if (goals.length === 0) {
+                insights.push(`
+                    <div class="insight-item">
+                        <div class="insight-icon">🎯</div>
+                        <div class="insight-text">
+                            <h4>Set Financial Goals</h4>
+                            <p>Setting and achieving goals can significantly boost your independence score.</p>
+                        </div>
+                    </div>
+                `);
+            }
+            
+            return insights.join('');
+        }
+    </script>
+</body>
+</html>

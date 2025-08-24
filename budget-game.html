@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+<title>SmartCents - Budget Challenge Game</title>
+<link rel="stylesheet" href="budget-game.css">
+</head>
+<body>
+  
+  <nav class="navbar">
+        <a href="index.html" class="backbutton">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="nav-brand">SmartCents</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="add-expense.html" class="nav-link">Add Expense</a>
+            <a href="set-goal.html" class="nav-link">Set Goal</a>
+            <a href="mentor.html" class="nav-link">Mentor</a>
+            <a href="budget-game.html" class="nav-link active">Game</a>
+            <a href="skill-tree.html" class="nav-link">Skill Path</a>
+        </div>
+  </nav>
+
+  <main class="container">
+    <header class="page-header">
+      <h1>Budget Challenge Game</h1>
+      <p class="tagline">Compete with friends in savings challenges!</p>
+    </header>
+
+    <div class="game-grid">
+      <!-- Create Challenge Card -->
+      <div class="card create-challenge-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="bi bi-plus-circle"></i>
+          </div>
+          <h2>Create Challenge</h2>
+        </div>
+        
+        <form id="challengeForm" class="challenge-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="challengeName">
+                <i class="bi bi-trophy"></i>
+                Challenge Name
+              </label>
+              <input type="text" id="challengeName" required placeholder="e.g., Summer Vacation Fund">
+            </div>
+            <div class="form-group">
+              <label for="hostName">
+                <i class="bi bi-person"></i>
+                Your Name
+              </label>
+              <input type="text" id="hostName" required placeholder="Enter your name">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="goalAmount">
+              <i class="bi bi-currency-dollar"></i>
+              Goal Amount
+            </label>
+            <div class="amount-input">
+              <span class="currency-symbol">$</span>
+              <input type="number" id="goalAmount" required min="0" step="1" placeholder="500">
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-rocket-takeoff"></i>
+            Launch Challenge
+          </button>
+        </form>
+        
+        <div id="shareLink" class="share-link"></div>
+      </div>
+
+      <!-- Getting Started Card -->
+      <div class="card getting-started-card" id="gettingStartedCard">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="bi bi-lightbulb"></i>
+          </div>
+          <h2>Getting Started</h2>
+        </div>
+        
+        <div class="getting-started-content">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Create a Challenge</h4>
+              <p>Set a savings goal and invite friends to join your challenge</p>
+            </div>
+          </div>
+          
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Share the Link</h4>
+              <p>Send the challenge link to friends so they can join</p>
+            </div>
+          </div>
+          
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Track Progress</h4>
+              <p>Update your savings regularly and see how you compare</p>
+            </div>
+          </div>
+          
+          <div class="step-item">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Stay Motivated</h4>
+              <p>Compete with friends and celebrate milestones together</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Tips Card -->
+      <div class="card game-tips-card" id="gameTipsCard">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="bi bi-stars"></i>
+          </div>
+          <h2>Pro Tips</h2>
+        </div>
+        
+        <div class="tips-content">
+          <div class="tip-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Set realistic goals that challenge but don't overwhelm</span>
+          </div>
+          
+          <div class="tip-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Update progress weekly to stay engaged</span>
+          </div>
+          
+          <div class="tip-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Celebrate small wins to maintain momentum</span>
+          </div>
+          
+          <div class="tip-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Use the competition to push yourself further</span>
+          </div>
+          
+          <div class="tip-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Share your journey to inspire others</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Join Challenge Card -->
+      <div class="card join-challenge-card" id="joinSection" style="display:none;">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="bi bi-people"></i>
+          </div>
+          <h2>Join Challenge</h2>
+        </div>
+        
+        <form id="joinForm" class="join-form">
+          <div class="form-group">
+            <label for="joinName">
+              <i class="bi bi-person-plus"></i>
+              Your Name
+            </label>
+            <input type="text" id="joinName" required placeholder="Enter your name to join">
+          </div>
+          <button type="submit" class="btn btn-secondary">
+            <i class="bi bi-arrow-right-circle"></i>
+            Join Challenge
+          </button>
+        </form>
+      </div>
+
+      <!-- Progress Tracking Card -->
+      <div class="card progress-card" id="progressSection" style="display:none;">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="bi bi-graph-up"></i>
+          </div>
+          <h2>Challenge Progress</h2>
+        </div>
+        
+        <div class="challenge-info" id="challengeInfo">
+          <!-- Challenge info will be populated by JavaScript -->
+        </div>
+        
+        <div class="participants-container">
+          <h3>Participants</h3>
+          <div id="participants" class="participants-list"></div>
+        </div>
+        
+        <div class="update-progress-section">
+          <h3>Update My Progress</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="addAmount">
+                <i class="bi bi-plus-circle"></i>
+                Add to Savings
+              </label>
+              <div class="amount-input">
+                <span class="currency-symbol">$</span>
+                <input type="number" id="addAmount" min="0" step="1" placeholder="25">
+              </div>
+            </div>
+          </div>
+          <button id="updateBtn" class="btn btn-success">
+            <i class="bi bi-check-circle"></i>
+            Update Progress
+          </button>
+        </div>
+        
+        <div class="challenge-actions">
+          <button id="endChallengeBtn" class="btn btn-danger" style="display: none;">
+            <i class="bi bi-x-circle"></i>
+            End Challenge
+          </button>
+          <button id="leaveChallengeBtn" class="btn btn-secondary">
+            <i class="bi bi-box-arrow-right"></i>
+            Leave Challenge
+          </button>
+        </div>
+      </div>
+
+      <!-- Game Stats Card -->
+      <div class="card stats-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="bi bi-bar-chart"></i>
+          </div>
+          <h2>Game Statistics</h2>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="totalChallenges">0</div>
+            <div class="stat-label">Challenges Created</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="totalSavings">$0</div>
+            <div class="stat-label">Total Saved</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="avgProgress">0%</div>
+            <div class="stat-label">Avg. Progress</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+let challengeId = null;
+let userName = null;
+let goalAmount = 0;
+
+const challengeForm = document.getElementById("challengeForm");
+const joinSection = document.getElementById("joinSection");
+const joinForm = document.getElementById("joinForm");
+const progressSection = document.getElementById("progressSection");
+const participantsDiv = document.getElementById("participants");
+const updateBtn = document.getElementById("updateBtn");
+const shareLinkDiv = document.getElementById("shareLink");
+const endChallengeBtn = document.getElementById("endChallengeBtn");
+const leaveChallengeBtn = document.getElementById("leaveChallengeBtn");
+const gettingStartedCard = document.getElementById("gettingStartedCard");
+const gameTipsCard = document.getElementById("gameTipsCard");
+
+// Helper
+function randomId() { return Math.random().toString(36).substr(2, 9); }
+function storageKey(id) { return 'challenge_' + id; }
+function saveChallenge(challenge) {
+  if (!challengeId) return;
+  localStorage.setItem(storageKey(challengeId), JSON.stringify(challenge));
+}
+function loadChallenge() {
+  if (!challengeId) return null;
+  const raw = localStorage.getItem(storageKey(challengeId));
+  return raw ? JSON.parse(raw) : null;
+}
+
+// Create Challenge
+challengeForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const challengeName = document.getElementById("challengeName").value.trim();
+  const host = document.getElementById("hostName").value.trim();
+  const goal = parseInt(document.getElementById("goalAmount").value, 10);
+
+  if (!challengeName || !host || isNaN(goal) || goal < 0) return alert("Please fill valid values");
+
+  challengeId = randomId();
+  userName = host;
+  goalAmount = goal;
+
+  const challenge = { name: challengeName, goal: goalAmount, participants: { [host]: 0 } };
+  saveChallenge(challenge);
+
+  const newUrl = window.location.href.split("?")[0] + "?c=" + challengeId;
+  window.history.replaceState(null, "", newUrl);
+  shareLinkDiv.innerHTML = `
+    <div class="share-success">
+      <i class="bi bi-check-circle"></i>
+      <span>Challenge created! Share this link:</span>
+      <a href="${newUrl}" target="_blank" class="share-link-btn">
+        <i class="bi bi-link-45deg"></i>
+        Copy Link
+      </a>
+    </div>
+  `;
+
+  challengeForm.reset();
+  joinSection.style.display = "none";
+  progressSection.style.display = "block";
+  renderProgress();
+  updateStats();
+  gettingStartedCard.style.display = "none";
+  gameTipsCard.style.display = "none";
+});
+
+// Check URL for challenge id
+const params = new URLSearchParams(window.location.search);
+if (params.has("c")) {
+  challengeId = params.get("c");
+  const challenge = loadChallenge();
+  if (!challenge) {
+    alert("Challenge not found or has not been created yet. If you created it in another browser tab, please refresh after creation.");
+    // allow user to create in this tab as fallback
+  } else {
+    goalAmount = challenge.goal || 0;
+    // show share link for convenience
+    const currentUrl = window.location.href.split("?")[0] + "?c=" + challengeId;
+    shareLinkDiv.innerHTML = `
+      <div class="challenge-active">
+        <i class="bi bi-trophy"></i>
+        <span><strong>${challenge.name}</strong> - Goal: $${challenge.goal}</span>
+        <a href="${currentUrl}" target="_blank" class="share-link-btn">
+          <i class="bi bi-share"></i>
+          Share
+        </a>
+      </div>
+    `;
+    joinSection.style.display = "block";
+    // If only one participant (host) and it's the current host, show progress immediately
+    // but we don't auto-set userName here; user must join (or create)
+    renderProgress();
+    gettingStartedCard.style.display = "none";
+    gameTipsCard.style.display = "none";
+  }
+}
+
+// Join Challenge
+joinForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const name = document.getElementById("joinName").value.trim();
+  if (!name) return;
+  if (!challengeId) return alert("No challenge to join");
+
+  userName = name;
+  const challenge = loadChallenge() || { name: 'Untitled', goal: 0, participants: {} };
+  if (!challenge.participants) challenge.participants = {};
+  if (!(userName in challenge.participants)) {
+    challenge.participants[userName] = 0;
+  }
+  saveChallenge(challenge);
+
+  joinSection.style.display = "none";
+  progressSection.style.display = "block";
+  renderProgress();
+  updateStats();
+});
+
+// Update Progress
+updateBtn.addEventListener("click", () => {
+  const add = parseInt(document.getElementById("addAmount").value, 10) || 0;
+  if (!userName) return alert("You must join the challenge first");
+  if (!challengeId) return alert("No challenge loaded");
+
+  const challenge = loadChallenge() || { participants: {} };
+  if (!challenge.participants) challenge.participants = {};
+  challenge.participants[userName] = (challenge.participants[userName] || 0) + add;
+  saveChallenge(challenge);
+
+  document.getElementById("addAmount").value = "";
+  renderProgress();
+  updateStats();
+});
+
+// End Challenge
+endChallengeBtn.addEventListener("click", () => {
+  if (!challengeId) return alert("No challenge to end");
+  
+  const challenge = loadChallenge();
+  if (!challenge) return alert("Challenge not found");
+  
+  // Show challenge summary before ending
+  const totalSaved = Object.values(challenge.participants || {}).reduce((sum, amount) => sum + (Number(amount) || 0), 0);
+  const participantCount = Object.keys(challenge.participants || {}).length;
+  
+  const confirmMessage = `Are you sure you want to end "${challenge.name}"?\n\n` +
+    `Challenge Summary:\n` +
+    `• Goal: $${challenge.goal}\n` +
+    `• Total Saved: $${totalSaved}\n` +
+    `• Participants: ${participantCount}\n` +
+    `• Progress: ${Math.round((totalSaved / challenge.goal) * 100)}%\n\n` +
+    `This action cannot be undone and all progress will be lost.`;
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+
+  // Remove challenge data
+  localStorage.removeItem(storageKey(challengeId));
+  sessionStorage.removeItem('challenge_user_' + challengeId);
+  
+  // Clear URL parameters
+  window.history.replaceState(null, "", window.location.href.split("?")[0]);
+  
+  // Show success message
+  alert(`Challenge "${challenge.name}" ended successfully!\n\nFinal Results:\n• Total Saved: $${totalSaved}\n• Participants: ${participantCount}`);
+  
+  // Reset state and redirect
+  challengeId = null;
+  userName = null;
+  goalAmount = 0;
+  
+  // Show the getting started and tips cards again
+  gettingStartedCard.style.display = "block";
+  gameTipsCard.style.display = "block";
+  
+  // Redirect to create challenge page
+  window.location.href = "budget-game.html";
+});
+
+// Leave Challenge
+leaveChallengeBtn.addEventListener("click", () => {
+  if (!challengeId) return alert("No challenge to leave");
+  if (!userName) return alert("You must join the challenge first");
+
+  const challenge = loadChallenge();
+  if (!challenge) return alert("Challenge not found");
+
+  if (challenge.participants && challenge.participants[userName]) {
+    delete challenge.participants[userName];
+    saveChallenge(challenge);
+
+    // Clear user's progress for this challenge from sessionStorage
+    sessionStorage.removeItem('challenge_user_' + challengeId);
+
+    alert(`You have left the challenge "${challenge.name}". Your progress has been reset.`);
+    
+    // If this was the last participant, show the getting started and tips cards again
+    if (Object.keys(challenge.participants).length === 0) {
+      gettingStartedCard.style.display = "block";
+      gameTipsCard.style.display = "block";
+    }
+    
+    renderProgress();
+    updateStats();
+  } else {
+    alert("You are not a participant in this challenge or have already left.");
+  }
+});
+
+// Render progress
+function renderProgress() {
+  const challenge = loadChallenge();
+  participantsDiv.innerHTML = "";
+
+  if (!challenge) {
+    participantsDiv.innerHTML = "<div class='no-data'>No challenge data available.</div>";
+    return;
+  }
+
+  goalAmount = challenge.goal || 0;
+
+  // Update challenge info
+  const challengeInfo = document.getElementById("challengeInfo");
+  if (challengeInfo) {
+    const hostName = Object.keys(challenge.participants || {})[0]; // First participant is the host
+    challengeInfo.innerHTML = `
+      <div class="challenge-summary">
+        <div class="challenge-name">${challenge.name}</div>
+        <div class="challenge-goal">Goal: $${challenge.goal}</div>
+        <div class="challenge-participants">${Object.keys(challenge.participants || {}).length} participants</div>
+        <div class="challenge-host">Host: ${hostName}</div>
+      </div>
+    `;
+  }
+
+  const entries = Object.entries(challenge.participants || {});
+  if (entries.length === 0) {
+    participantsDiv.innerHTML = "<div class='no-data'>No participants yet.</div>";
+    return;
+  }
+
+  for (const [name, progress] of entries) {
+    const safeProgress = Number(progress) || 0;
+    const percent = goalAmount > 0 ? Math.min(100, Math.round((safeProgress / goalAmount) * 100)) : 0;
+    const isHost = entries.indexOf([name, progress]) === 0; // First participant is host
+
+    const entry = document.createElement("div");
+    entry.className = "participant-entry";
+
+    const participantHeader = document.createElement("div");
+    participantHeader.className = "participant-header";
+    
+    const participantName = document.createElement("div");
+    participantName.className = "participant-name";
+    participantName.innerHTML = `<i class="bi bi-person-circle"></i> ${name} ${isHost ? '<span class="host-badge">👑 Host</span>' : ''}`;
+    
+    const participantProgress = document.createElement("div");
+    participantProgress.className = "participant-progress";
+    participantProgress.textContent = `${safeProgress} / ${goalAmount}`;
+    
+    participantHeader.appendChild(participantName);
+    participantHeader.appendChild(participantProgress);
+    entry.appendChild(participantHeader);
+
+    const barWrap = document.createElement("div");
+    barWrap.className = "progress-bar";
+    const fill = document.createElement("div");
+    fill.className = "progress-fill";
+    fill.style.width = percent + "%";
+    barWrap.appendChild(fill);
+    entry.appendChild(barWrap);
+
+    const meta = document.createElement("div");
+    meta.className = "progress-meta";
+    meta.innerHTML = `<span class="progress-percent">${percent}%</span> <span class="progress-amount">$${safeProgress}</span>`;
+    entry.appendChild(meta);
+
+    // highlight current user
+    if (userName && name === userName) {
+      entry.classList.add("current-user");
+    }
+
+    participantsDiv.appendChild(entry);
+  }
+
+  // Show/hide end challenge button based on whether current user is host
+  const hostName = Object.keys(challenge.participants || {})[0];
+  if (endChallengeBtn) {
+    if (userName === hostName) {
+      endChallengeBtn.style.display = "inline-flex";
+      endChallengeBtn.innerHTML = '<i class="bi bi-x-circle"></i> End Challenge';
+    } else {
+      endChallengeBtn.style.display = "none";
+    }
+  }
+
+  // Show/hide leave challenge button based on whether current user is a participant
+  if (leaveChallengeBtn) {
+    if (challenge.participants && challenge.participants[userName]) {
+      leaveChallengeBtn.style.display = "inline-flex";
+      leaveChallengeBtn.innerHTML = '<i class="bi bi-box-arrow-right"></i> Leave Challenge';
+    } else {
+      leaveChallengeBtn.style.display = "none";
+    }
+  }
+}
+
+// Update statistics
+function updateStats() {
+  const challenges = Object.keys(localStorage).filter(key => key.startsWith('challenge_'));
+  const totalChallenges = challenges.length;
+  
+  let totalSavings = 0;
+  let totalProgress = 0;
+  let progressCount = 0;
+  
+  challenges.forEach(key => {
+    try {
+      const challenge = JSON.parse(localStorage.getItem(key));
+      if (challenge && challenge.participants) {
+        Object.values(challenge.participants).forEach(progress => {
+          totalSavings += Number(progress) || 0;
+        });
+        if (challenge.goal > 0) {
+          const challengeProgress = Math.min(100, (totalSavings / challenge.goal) * 100);
+          totalProgress += challengeProgress;
+          progressCount++;
+        }
+      }
+    } catch (e) {
+      // Skip invalid entries
+    }
+  });
+  
+  const avgProgress = progressCount > 0 ? Math.round(totalProgress / progressCount) : 0;
+  
+  document.getElementById("totalChallenges").textContent = totalChallenges;
+  document.getElementById("totalSavings").textContent = `$${totalSavings}`;
+  document.getElementById("avgProgress").textContent = `${avgProgress}%`;
+}
+
+// Initial render if we have challenge loaded and user previously joined (optional)
+if (challengeId) {
+  const storedChallenge = loadChallenge();
+  if (storedChallenge) {
+    // try to detect if there's a saved userName in sessionStorage for this challenge
+    const savedName = sessionStorage.getItem('challenge_user_' + challengeId);
+    if (savedName) {
+      userName = savedName;
+    }
+    renderProgress();
+  }
+}
+
+// save joined name per-challenge to sessionStorage for convenience
+joinForm.addEventListener("submit", () => {
+  if (userName && challengeId) sessionStorage.setItem('challenge_user_' + challengeId, userName);
+});
+updateBtn.addEventListener("click", () => {
+  if (userName && challengeId) sessionStorage.setItem('challenge_user_' + challengeId, userName);
+});
+
+// Initialize stats on page load
+document.addEventListener('DOMContentLoaded', updateStats);
+</script>
+</body>
+</html>
