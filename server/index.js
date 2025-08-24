@@ -26,11 +26,10 @@ const allowedOrigins = [
   "http://127.0.0.1:3000",
   "http://localhost:5500",
   "http://127.0.0.1:5500",
-  "http://localhost:5550",     // 👈 add this
-  "http://127.0.0.1:5550",     // 👈 add this
-  "https://smartcentsrecess5.netlify.app"  // your Netlify frontend
+  "http://localhost:5550",
+  "http://127.0.0.1:5550",
+  "https://smartcentsrecess5.netlify.app"  // 👈 your Netlify frontend
 ];
-
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -71,7 +70,7 @@ app.post('/api/transactions', async (req, res) => {
     await transaction.save();
     res.status(201).json(transaction);
   } catch (err) {
-    console.error("Error saving transaction:", err);
+    console.error("❌ Error saving transaction:", err);
     res.status(500).json({ error: "Failed to save transaction" });
   }
 });
@@ -82,7 +81,7 @@ app.get('/api/transactions', async (req, res) => {
     const transactions = await Transaction.find().sort({ date: -1 });
     res.json(transactions);
   } catch (err) {
-    console.error("Error fetching transactions:", err);
+    console.error("❌ Error fetching transactions:", err);
     res.status(500).json({ error: "Failed to fetch transactions" });
   }
 });
@@ -97,10 +96,9 @@ app.put('/api/transactions/:id', async (req, res) => {
     if (!transaction) {
       return res.status(404).json({ error: "Transaction not found" });
     }
-    
     res.json(transaction);
   } catch (err) {
-    console.error("Error updating transaction:", err);
+    console.error("❌ Error updating transaction:", err);
     res.status(500).json({ error: "Failed to update transaction" });
   }
 });
@@ -114,7 +112,7 @@ app.post('/api/goals', async (req, res) => {
     await goal.save();
     res.status(201).json(goal);
   } catch (err) {
-    console.error("Error saving goal:", err);
+    console.error("❌ Error saving goal:", err);
     res.status(500).json({ error: "Failed to save goal" });
   }
 });
@@ -125,7 +123,7 @@ app.get('/api/goals', async (req, res) => {
     const goals = await Goal.find().sort({ createdAt: -1 });
     res.json(goals);
   } catch (err) {
-    console.error("Error fetching goals:", err);
+    console.error("❌ Error fetching goals:", err);
     res.status(500).json({ error: "Failed to fetch goals" });
   }
 });
@@ -140,10 +138,9 @@ app.put('/api/goals/:id', async (req, res) => {
     if (!goal) {
       return res.status(404).json({ error: "Goal not found" });
     }
-    
     res.json(goal);
   } catch (err) {
-    console.error("Error updating goal:", err);
+    console.error("❌ Error updating goal:", err);
     res.status(500).json({ error: "Failed to update goal" });
   }
 });
@@ -154,14 +151,13 @@ app.put('/api/goals/:id', async (req, res) => {
 app.post('/api/mentor-tip', async (req, res) => {
   try {
     const { transactions, goals } = req.body;
-
     if (!transactions || !goals) {
       return res.status(400).json({ error: 'Missing transactions or goals data' });
     }
 
     const financialContext = buildFinancialContext(transactions, goals);
 
-    const systemPrompt = `You are a helpful financial advisor chatbot for SmartCents, a financial management app for adolescents. 
+    const systemPrompt = `You are a helpful financial advisor chatbot for SmartCents. 
 
 RULES:
 - Keep responses under 200 words
@@ -181,11 +177,10 @@ ${financialContext}`;
     });
 
     const tip = completion.choices[0].message.content.trim();
-
     res.json({ success: true, tip, model: "gpt-4o-mini", context: financialContext });
 
   } catch (error) {
-    console.error('Error generating AI mentor tip:', error);
+    console.error('❌ Error generating AI mentor tip:', error);
     res.status(500).json({ error: 'Failed to generate AI mentor tip' });
   }
 });
@@ -194,7 +189,6 @@ ${financialContext}`;
 app.post('/api/chatbot', async (req, res) => {
   try {
     const { message, transactions = [], goals = [], score = 0 } = req.body;
-
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
@@ -202,7 +196,6 @@ app.post('/api/chatbot', async (req, res) => {
     const financialContext = buildFinancialContext(transactions, goals);
 
     const systemPrompt = `You are SmartCents Chatbot, a helpful financial mentor for adolescents. 
-Use the financial context provided to ground your advice. 
 Always be short (under 150 words), positive, and practical. 
 Mention savings rate, independence score, and top spending category when relevant. 
 
@@ -224,7 +217,7 @@ Independence Score: ${score}`;
     res.json({ success: true, reply });
 
   } catch (error) {
-    console.error("Chatbot error:", error);
+    console.error("❌ Chatbot error:", error);
     res.status(500).json({ error: "Failed to generate chatbot response" });
   }
 });
@@ -260,48 +253,6 @@ Active Goals: ${activeGoals.length}
 Completed Goals: ${completedGoals.length}
 Total Transactions: ${transactions.length}`;
 }
-// ===== TRANSACTIONS =====
-app.get('/api/transactions', async (req, res) => {
-  try {
-    const transactions = await Transaction.find();
-    res.json(transactions);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch transactions" });
-  }
-});
-
-app.post('/api/transactions', async (req, res) => {
-  try {
-    const transaction = new Transaction(req.body);
-    await transaction.save();
-    res.json(transaction);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add transaction" });
-  }
-});
-
-// ===== GOALS =====
-app.get('/api/goals', async (req, res) => {
-  try {
-    const goals = await Goal.find();
-    res.json(goals);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch goals" });
-  }
-});
-
-app.post('/api/goals', async (req, res) => {
-  try {
-    const goal = new Goal(req.body);
-    await goal.save();
-    res.json(goal);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add goal" });
-  }
-});
-
-
-
 
 /* -------------------- START SERVER -------------------- */
 app.listen(PORT, () => {
