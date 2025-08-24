@@ -14,6 +14,8 @@ app.use(cors({
     "http://127.0.0.1:5500",
     "http://localhost:5550",
     "http://127.0.0.1:5550",
+    "http://localhost:5555",
+    "http://127.0.0.1:5555",
     "file://"
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -37,10 +39,10 @@ app.get('/api/health', (req, res) => {
 // AI Mentor Tip - Local implementation
 app.post('/api/mentor-tip', async (req, res) => {
   try {
-    const { transactions = [], goals = [] } = req.body;
+    const { transactions = [], goals = [], score = 0 } = req.body;
     
     // Generate local mentor tip based on financial data
-    const tip = generateLocalMentorTip(transactions, goals);
+    const tip = generateLocalMentorTip(transactions, goals, score);
     
     res.json({ 
       success: true, 
@@ -87,7 +89,7 @@ app.post('/api/chatbot', async (req, res) => {
 });
 
 // Generate local mentor tip
-function generateLocalMentorTip(transactions, goals) {
+function generateLocalMentorTip(transactions, goals, score = 0) {
   if (!transactions || transactions.length === 0) {
     return "Start tracking your income and expenses to get personalized financial advice. Every transaction you log helps me understand your spending patterns and provide better guidance!";
   }
@@ -137,6 +139,19 @@ function generateLocalMentorTip(transactions, goals) {
     const activeGoals = goals.filter(g => (g.savedAmount || 0) < g.targetAmount);
     if (activeGoals.length > 0) {
       tip += ` You have ${activeGoals.length} active savings goal(s). Stay focused on these to build your financial future!`;
+    }
+  }
+
+  // Add independence score context
+  if (score > 0) {
+    if (score >= 80) {
+      tip += ` 🎯 Your independence score is ${score}/100 - you're a financial superstar! Keep up these excellent habits.`;
+    } else if (score >= 60) {
+      tip += ` 🎯 Your independence score is ${score}/100 - you're doing great! Focus on the areas above to reach 80+.`;
+    } else if (score >= 40) {
+      tip += ` 🎯 Your independence score is ${score}/100 - good foundation! Implement the advice above to boost your score.`;
+    } else {
+      tip += ` 🎯 Your independence score is ${score}/100 - let's build this up! Follow the advice above to improve your financial habits.`;
     }
   }
 
@@ -203,7 +218,7 @@ function generateLocalChatbotResponse(message, transactions, goals, score) {
   }
 
   if (lowerMessage.includes('advice') || lowerMessage.includes('help') || lowerMessage.includes('tip')) {
-    return generateLocalMentorTip(transactions, goals);
+    return generateLocalMentorTip(transactions, goals, score);
   }
 
   // Default response

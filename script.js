@@ -583,12 +583,15 @@ async function generateAIMentorTip(transactions, goals) {
     }
 
     try {
+        // Calculate current independence score
+        const currentScore = calculateIndependenceScore(transactions, goals);
+        
         const response = await fetch(`${window.backendUrl}/api/mentor-tip`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ transactions, goals })
+            body: JSON.stringify({ transactions, goals, score: currentScore })
         });
 
         if (!response.ok) {

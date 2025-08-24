@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartCents - Financial Mentor</title>
+    <link rel="icon" type="image/png" href="ChatGPT Image Aug 23, 2025, 06_04_58 PM.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="mentor.css">
 </head>
@@ -137,14 +138,18 @@
                 const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
                 const goals = JSON.parse(localStorage.getItem('goals') || '[]');
 
-                // Send question + financial context to backend
+                // Get current independence score
+                const currentScore = calculateIndependenceScore(transactions, goals);
+                
+                // Send question + financial context + score to backend
                 const res = await fetch(`${window.backendUrl}/api/chatbot`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
                         message: input,
                         transactions: transactions,
-                        goals: goals
+                        goals: goals,
+                        score: currentScore
                     })
                 });
 
