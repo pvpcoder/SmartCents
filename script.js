@@ -1,4 +1,11 @@
-window.backendUrl = "https://smartcents-64ma.onrender.com";
+// Backend URL configuration
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    window.backendUrl = 'http://localhost:3000';
+    console.log('🌐 Detected LOCAL environment - using localhost:3000');
+} else {
+    window.backendUrl = 'https://smartcents-64ma.onrender.com';
+    console.log('🌐 Detected PRODUCTION environment - using production backend');
+}
 
 
 let spendingPieChart = null;
