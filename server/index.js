@@ -8,30 +8,32 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ✅ CORS configuration
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "https://smartcentsrecess5.netlify.app"  // 👈 your Netlify frontend
+];
+
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-
-    const allowedOrigins = [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://localhost:5500",
-      "http://127.0.0.1:5500",
-      "https://smartcentsrecess5.netlify.app" 
-    ];
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
     } else {
-      return callback(new Error("Not allowed by CORS: " + origin));
+      console.warn("❌ CORS blocked:", origin);
+      callback(new Error("Not allowed by CORS: " + origin));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 }));
 
 app.use(express.json());
 
+// ✅ OpenAI setup
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 if (!process.env.OPENAI_API_KEY) {
@@ -40,11 +42,12 @@ if (!process.env.OPENAI_API_KEY) {
 }
 console.log('✅ OpenAI API key works');
 
-// Health check
+// ✅ Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'SmartCents AI Mentor Server is running', openai: 'Configured' });
 });
 
+// ✅ Mentor Tip endpoint
 app.post('/api/mentor-tip', async (req, res) => {
   try {
     const { transactions, goals } = req.body;
@@ -57,21 +60,15 @@ app.post('/api/mentor-tip', async (req, res) => {
 
     const systemPrompt = `You are a helpful financial advisor chatbot for SmartCents, a financial management app for adolescents. 
 
-Your role is to provide personalized, actionable financial advice based on the user's spending patterns, income, and savings goals.
-
 RULES:
 - Keep responses under 200 words
 - Be encouraging and positive
 - Give specific, actionable advice
-- Focus on practical tips they can implement today
-- Consider their age and financial literacy level
-- Always mention their savings rate and top spending category
+- Always mention savings rate and top spending category
 - Reference their goals when relevant
 
 User's Financial Context:
-${financialContext}
-
-Generate a personalized financial mentor tip.`;
+${financialContext}`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -98,6 +95,7 @@ Generate a personalized financial mentor tip.`;
   }
 });
 
+// ✅ Chatbot endpoint
 app.post('/api/chatbot', async (req, res) => {
   try {
     const { message, transactions = [], goals = [], score = 0 } = req.body;
@@ -109,7 +107,6 @@ app.post('/api/chatbot', async (req, res) => {
     const financialContext = buildFinancialContext(transactions, goals);
 
     const systemPrompt = `You are SmartCents Chatbot, a helpful financial mentor for adolescents. 
-
 Use the financial context provided to ground your advice. 
 Always be short (under 150 words), positive, and practical. 
 Mention savings rate, independence score, and top spending category when relevant. 
