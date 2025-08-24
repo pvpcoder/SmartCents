@@ -1,7 +1,7 @@
 {
-  "name": "smartcents-backend",
+  "name": "smartcents-local-server",
   "version": "1.0.0",
-  "description": "Backend server for SmartCents AI mentor tips",
+  "description": "Local server for SmartCents with local storage",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -9,19 +9,15 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.18.2",
-    "mongoose": "^8.18.0",
-    "openai": "^4.104.0"
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
   "keywords": [
     "finance",
-    "ai",
     "mentor",
-    "openai"
+    "local-storage"
   ],
   "author": "SmartCents Team",
   "license": "MIT"

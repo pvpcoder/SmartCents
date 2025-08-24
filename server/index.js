@@ -1,263 +1,226 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const OpenAI = require('openai');
-const mongoose = require('mongoose');
-
-const Transaction = require('./models/Transaction.js');
-const Goal = require('./models/Goal.js');
-
-dotenv.config();
-
-// ✅ MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ Connected to MongoDB Atlas'))
-.catch((err) => console.error('❌ MongoDB connection error:', err));
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
-// ✅ CORS configuration
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "http://localhost:5550",
-  "http://127.0.0.1:5550",
-  "https://smartcentsrecess5.netlify.app"  // 👈 your Netlify frontend
-];
-
+// CORS configuration for local development
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn("❌ CORS blocked:", origin);
-      callback(new Error("Not allowed by CORS: " + origin));
-    }
-  },
+  origin: [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:5550",
+    "http://127.0.0.1:5550",
+    "file://"
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..')));
 
-// ✅ OpenAI setup
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-if (!process.env.OPENAI_API_KEY) {
-  console.error('❌ OPENAI_API_KEY cannot be found in .env.');
-  process.exit(1);
-}
-console.log('✅ OpenAI API key works');
-
-// ✅ Health check
+// Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'SmartCents AI Mentor Server is running', openai: 'Configured' });
+  res.json({ 
+    status: 'OK', 
+    message: 'SmartCents Local Server is running',
+    mode: 'local-storage',
+    timestamp: new Date().toISOString()
+  });
 });
 
-/* -------------------- TRANSACTION ROUTES -------------------- */
-
-// Create new transaction
-app.post('/api/transactions', async (req, res) => {
-  try {
-    const transaction = new Transaction(req.body);
-    await transaction.save();
-    res.status(201).json(transaction);
-  } catch (err) {
-    console.error("❌ Error saving transaction:", err);
-    res.status(500).json({ error: "Failed to save transaction" });
-  }
-});
-
-// Get all transactions
-app.get('/api/transactions', async (req, res) => {
-  try {
-    const transactions = await Transaction.find().sort({ date: -1 });
-    res.json(transactions);
-  } catch (err) {
-    console.error("❌ Error fetching transactions:", err);
-    res.status(500).json({ error: "Failed to fetch transactions" });
-  }
-});
-
-// Update transaction
-app.put('/api/transactions/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-    
-    const transaction = await Transaction.findByIdAndUpdate(id, updates, { new: true });
-    if (!transaction) {
-      return res.status(404).json({ error: "Transaction not found" });
-    }
-    res.json(transaction);
-  } catch (err) {
-    console.error("❌ Error updating transaction:", err);
-    res.status(500).json({ error: "Failed to update transaction" });
-  }
-});
-
-/* -------------------- GOAL ROUTES -------------------- */
-
-// Create new goal
-app.post('/api/goals', async (req, res) => {
-  try {
-    const goal = new Goal(req.body);
-    await goal.save();
-    res.status(201).json(goal);
-  } catch (err) {
-    console.error("❌ Error saving goal:", err);
-    res.status(500).json({ error: "Failed to save goal" });
-  }
-});
-
-// Get all goals
-app.get('/api/goals', async (req, res) => {
-  try {
-    const goals = await Goal.find().sort({ createdAt: -1 });
-    res.json(goals);
-  } catch (err) {
-    console.error("❌ Error fetching goals:", err);
-    res.status(500).json({ error: "Failed to fetch goals" });
-  }
-});
-
-// Update goal
-app.put('/api/goals/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-    
-    const goal = await Goal.findByIdAndUpdate(id, updates, { new: true });
-    if (!goal) {
-      return res.status(404).json({ error: "Goal not found" });
-    }
-    res.json(goal);
-  } catch (err) {
-    console.error("❌ Error updating goal:", err);
-    res.status(500).json({ error: "Failed to update goal" });
-  }
-});
-
-/* -------------------- AI ENDPOINTS -------------------- */
-
-// Mentor Tip
+// AI Mentor Tip - Local implementation
 app.post('/api/mentor-tip', async (req, res) => {
   try {
-    const { transactions, goals } = req.body;
-    if (!transactions || !goals) {
-      return res.status(400).json({ error: 'Missing transactions or goals data' });
-    }
-
-    const financialContext = buildFinancialContext(transactions, goals);
-
-    const systemPrompt = `You are a helpful financial advisor chatbot for SmartCents. 
-
-RULES:
-- Keep responses under 200 words
-- Be encouraging and positive
-- Give specific, actionable advice
-- Always mention savings rate and top spending category
-- Reference their goals when relevant
-
-User's Financial Context:
-${financialContext}`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "system", content: systemPrompt }],
-      max_tokens: 250,
-      temperature: 0.7
+    const { transactions = [], goals = [] } = req.body;
+    
+    // Generate local mentor tip based on financial data
+    const tip = generateLocalMentorTip(transactions, goals);
+    
+    res.json({ 
+      success: true, 
+      tip,
+      source: 'local-intelligence',
+      timestamp: new Date().toISOString()
     });
 
-    const tip = completion.choices[0].message.content.trim();
-    res.json({ success: true, tip, model: "gpt-4o-mini", context: financialContext });
-
   } catch (error) {
-    console.error('❌ Error generating AI mentor tip:', error);
-    res.status(500).json({ error: 'Failed to generate AI mentor tip' });
+    console.error('❌ Error generating local mentor tip:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate mentor tip',
+      fallback: "Start tracking your income and expenses to get personalized financial advice."
+    });
   }
 });
 
-// Chatbot
+// Chatbot - Local implementation
 app.post('/api/chatbot', async (req, res) => {
   try {
-    const { message, transactions = [], goals = [], score = 0 } = req.body;
-    if (!message) {
+    const { message = '', transactions = [], goals = [], score = 0 } = req.body;
+    
+    if (!message.trim()) {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    const financialContext = buildFinancialContext(transactions, goals);
-
-    const systemPrompt = `You are SmartCents Chatbot, a helpful financial mentor for adolescents. 
-Always be short (under 150 words), positive, and practical. 
-Mention savings rate, independence score, and top spending category when relevant. 
-
-User's Financial Context:
-${financialContext}
-Independence Score: ${score}`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message }
-      ],
-      max_tokens: 250,
-      temperature: 0.7
+    // Generate local chatbot response
+    const reply = generateLocalChatbotResponse(message, transactions, goals, score);
+    
+    res.json({ 
+      success: true, 
+      reply,
+      source: 'local-intelligence',
+      timestamp: new Date().toISOString()
     });
-
-    const reply = completion.choices[0].message.content.trim();
-    res.json({ success: true, reply });
 
   } catch (error) {
     console.error("❌ Chatbot error:", error);
-    res.status(500).json({ error: "Failed to generate chatbot response" });
+    res.status(500).json({ 
+      error: "Failed to generate chatbot response",
+      fallback: "I'm having trouble right now. Try asking me about your savings, spending, or goals!"
+    });
   }
 });
 
-/* -------------------- FINANCIAL CONTEXT BUILDER -------------------- */
-function buildFinancialContext(transactions, goals) {
-  if (!transactions || transactions.length === 0) return "No financial data available yet.";
+// Generate local mentor tip
+function generateLocalMentorTip(transactions, goals) {
+  if (!transactions || transactions.length === 0) {
+    return "Start tracking your income and expenses to get personalized financial advice. Every transaction you log helps me understand your spending patterns and provide better guidance!";
+  }
 
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   const totalSavings = totalIncome - totalExpenses;
-  const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome * 100).toFixed(1) : 0;
+  const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome * 100) : 0;
 
+  // Analyze spending categories
   const categoryTotals = {};
   transactions.filter(t => t.type === 'expense').forEach(t => {
     categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
   });
 
-  const topSpendingCategories = Object.entries(categoryTotals)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3)
-    .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`);
+  const topCategory = Object.keys(categoryTotals).reduce((a, b) => 
+    categoryTotals[a] > categoryTotals[b] ? a : b, '');
 
-  const activeGoals = goals.filter(g => (g.savedAmount || 0) < g.targetAmount);
-  const completedGoals = goals.filter(g => (g.savedAmount || 0) >= g.targetAmount);
+  // Generate personalized tip
+  let tip = "";
+  
+  if (savingsRate >= 20) {
+    tip = `🎉 Excellent work! You're saving ${savingsRate.toFixed(1)}% of your income, which is above the recommended 20%. `;
+    if (goals.length > 0) {
+      tip += `Keep focusing on your goals - you're building great financial habits!`;
+    } else {
+      tip += `Consider setting some savings goals to make your money work even harder for you.`;
+    }
+  } else if (savingsRate >= 10) {
+    tip = `👍 Good progress! You're saving ${savingsRate.toFixed(1)}% of your income. `;
+    tip += `Try to increase this to 20% by looking for ways to reduce expenses or increase income.`;
+  } else if (savingsRate >= 0) {
+    tip = `📊 You're saving ${savingsRate.toFixed(1)}% of your income. `;
+    tip += `Aim for 20% savings rate by tracking every expense and finding areas to cut back.`;
+  } else {
+    tip = `⚠️ You're currently spending more than you earn. `;
+    tip += `Focus on reducing expenses, especially in your top spending category: ${topCategory}.`;
+  }
 
-  return `Income: $${totalIncome.toFixed(2)}
-Expenses: $${totalExpenses.toFixed(2)}
-Savings: $${totalSavings.toFixed(2)}
-Savings Rate: ${savingsRate}%
-Top Spending Categories: ${topSpendingCategories.join(', ')}
-Active Goals: ${activeGoals.length}
-Completed Goals: ${completedGoals.length}
-Total Transactions: ${transactions.length}`;
+  // Add category-specific advice
+  if (topCategory && categoryTotals[topCategory] > totalIncome * 0.4) {
+    tip += ` Your ${topCategory} spending is quite high - consider setting a budget for this category.`;
+  }
+
+  // Add goal-related advice
+  if (goals.length > 0) {
+    const activeGoals = goals.filter(g => (g.savedAmount || 0) < g.targetAmount);
+    if (activeGoals.length > 0) {
+      tip += ` You have ${activeGoals.length} active savings goal(s). Stay focused on these to build your financial future!`;
+    }
+  }
+
+  return tip;
 }
 
-/* -------------------- START SERVER -------------------- */
+// Generate local chatbot response
+function generateLocalChatbotResponse(message, transactions, goals, score) {
+  const lowerMessage = message.toLowerCase();
+  
+  // Financial analysis
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const totalSavings = totalIncome - totalExpenses;
+  const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome * 100) : 0;
+
+  // Common questions and responses
+  if (lowerMessage.includes('savings') || lowerMessage.includes('save')) {
+    if (savingsRate >= 20) {
+      return `🎉 You're doing great with savings! Your current rate is ${savingsRate.toFixed(1)}%, which is above the recommended 20%. Keep up the excellent work!`;
+    } else if (savingsRate >= 10) {
+      return `👍 Good progress! You're saving ${savingsRate.toFixed(1)}% of your income. Try to increase this to 20% by reducing expenses or finding ways to earn more.`;
+    } else {
+      return `📊 You're currently saving ${savingsRate.toFixed(1)}% of your income. Aim for 20% by tracking every expense and finding areas to cut back.`;
+    }
+  }
+
+  if (lowerMessage.includes('spending') || lowerMessage.includes('expense')) {
+    if (transactions.length === 0) {
+      return "Start by tracking your first expense! Log everything you spend money on to see where your money goes.";
+    }
+    
+    const categoryTotals = {};
+    transactions.filter(t => t.type === 'expense').forEach(t => {
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+    });
+    
+    const topCategory = Object.keys(categoryTotals).reduce((a, b) => 
+      categoryTotals[a] > categoryTotals[b] ? a : b, '');
+    
+    return `Your top spending category is ${topCategory} ($${categoryTotals[topCategory].toFixed(2)}). Consider setting a budget for this category to control your spending.`;
+  }
+
+  if (lowerMessage.includes('goal') || lowerMessage.includes('target')) {
+    if (goals.length === 0) {
+      return "Set your first savings goal! Whether it's a new phone, college fund, or emergency savings, having a target helps you stay motivated.";
+    }
+    
+    const activeGoals = goals.filter(g => (g.savedAmount || 0) < g.targetAmount);
+    const completedGoals = goals.filter(g => (g.savedAmount || 0) >= g.targetAmount);
+    
+    return `You have ${activeGoals.length} active goal(s) and ${completedGoals.length} completed goal(s)! Keep working on your active goals - every dollar saved gets you closer to your dreams.`;
+  }
+
+  if (lowerMessage.includes('score') || lowerMessage.includes('independence')) {
+    return `Your current independence score is ${score}/100. This score reflects your financial habits - tracking expenses, saving money, and working toward goals all help increase it!`;
+  }
+
+  if (lowerMessage.includes('income') || lowerMessage.includes('earn')) {
+    if (totalIncome === 0) {
+      return "Start by logging your first income! Whether it's allowance, part-time work, or gifts, tracking income helps you understand your earning potential.";
+    }
+    return `You've earned $${totalIncome.toFixed(2)} total. Great job tracking your income! Consider ways to increase this through part-time work, skills development, or finding new opportunities.`;
+  }
+
+  if (lowerMessage.includes('advice') || lowerMessage.includes('help') || lowerMessage.includes('tip')) {
+    return generateLocalMentorTip(transactions, goals);
+  }
+
+  // Default response
+  return `Hi! I'm your SmartCents financial mentor. I can help you with questions about savings, spending, goals, and your independence score. What would you like to know?`;
+}
+
+// Serve the main application
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 SmartCents AI Mentor Server running on port ${PORT}`);
+  console.log(`🚀 SmartCents Local Server running on port ${PORT}`);
   console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
-  console.log(`✅ Transactions: GET/POST http://localhost:${PORT}/api/transactions`);
-  console.log(`✅ Goals: GET/POST http://localhost:${PORT}/api/goals`);
+  console.log(`✅ Mentor tips: POST http://localhost:${PORT}/api/mentor-tip`);
+  console.log(`✅ Chatbot: POST http://localhost:${PORT}/api/chatbot`);
+  console.log(`✅ Frontend: http://localhost:${PORT}`);
+  console.log(`✅ Mode: Local Storage (No external dependencies)`);
 });
