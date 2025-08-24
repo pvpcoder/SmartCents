@@ -1,3 +1,6 @@
+window.backendUrl = "https://smartcents-64ma.onrender.com";
+
+
 let spendingPieChart = null;
 let weeklyBarChart = null;
 
