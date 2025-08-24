@@ -8,17 +8,23 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ✅ CORS Middleware
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
-    if (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) {
-      return callback(null, true);
-    }
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:5500",
+      "http://127.0.0.1:5500",
+      "https://smartcentsrecess5.netlify.app" 
+    ];
 
-    // Add your production frontend URL here if deployed
-    return callback(new Error("Not allowed by CORS"));
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS: " + origin));
+    }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -26,21 +32,19 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ OpenAI setup
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 if (!process.env.OPENAI_API_KEY) {
-  console.error('OPENAI_API_KEY cannot be fuond in .env.');
+  console.error('❌ OPENAI_API_KEY cannot be found in .env.');
   process.exit(1);
 }
-console.log('OpenAI API key works');
+console.log('✅ OpenAI API key works');
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'SmartCents AI Mentor Server is running', openai: 'Configured' });
 });
 
-// ✅ Mentor Tip Endpoint
 app.post('/api/mentor-tip', async (req, res) => {
   try {
     const { transactions, goals } = req.body;
@@ -94,7 +98,6 @@ Generate a personalized financial mentor tip.`;
   }
 });
 
-// ✅ Chatbot Endpoint (with financial context)
 app.post('/api/chatbot', async (req, res) => {
   try {
     const { message, transactions = [], goals = [], score = 0 } = req.body;
@@ -134,7 +137,7 @@ Independence Score: ${score}`;
   }
 });
 
-// ✅ Financial context function
+// ✅ Financial context builder
 function buildFinancialContext(transactions, goals) {
   if (!transactions || transactions.length === 0) {
     return "No financial data available yet.";
@@ -188,8 +191,8 @@ Total Transactions: ${transactions.length}`;
 }
 
 app.listen(PORT, () => {
-  console.log(` SmartCents AI Mentor Server running on port ${PORT}`);
-  console.log(` Health check: http://localhost:${PORT}/api/health`);
-  console.log(` Mentor Tips: POST http://localhost:${PORT}/api/mentor-tip`);
-  console.log(` Chatbot: POST http://localhost:${PORT}/api/chatbot`);
+  console.log(`🚀 SmartCents AI Mentor Server running on port ${PORT}`);
+  console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
+  console.log(`✅ Mentor Tips: POST http://localhost:${PORT}/api/mentor-tip`);
+  console.log(`✅ Chatbot: POST http://localhost:${PORT}/api/chatbot`);
 });
