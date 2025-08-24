@@ -4,8 +4,8 @@ const dotenv = require('dotenv');
 const OpenAI = require('openai');
 const mongoose = require('mongoose');
 
-const Transaction = require('./models/Transaction');
-const Goal = require('./models/Goal');
+const Transaction = require('./models/Transaction.js');
+const Goal = require('./models/Goal.js');
 
 dotenv.config();
 
