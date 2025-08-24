@@ -260,6 +260,48 @@ Active Goals: ${activeGoals.length}
 Completed Goals: ${completedGoals.length}
 Total Transactions: ${transactions.length}`;
 }
+// ===== TRANSACTIONS =====
+app.get('/api/transactions', async (req, res) => {
+  try {
+    const transactions = await Transaction.find();
+    res.json(transactions);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+
+app.post('/api/transactions', async (req, res) => {
+  try {
+    const transaction = new Transaction(req.body);
+    await transaction.save();
+    res.json(transaction);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to add transaction" });
+  }
+});
+
+// ===== GOALS =====
+app.get('/api/goals', async (req, res) => {
+  try {
+    const goals = await Goal.find();
+    res.json(goals);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch goals" });
+  }
+});
+
+app.post('/api/goals', async (req, res) => {
+  try {
+    const goal = new Goal(req.body);
+    await goal.save();
+    res.json(goal);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to add goal" });
+  }
+});
+
+
+
 
 /* -------------------- START SERVER -------------------- */
 app.listen(PORT, () => {
