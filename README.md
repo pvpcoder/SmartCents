@@ -61,4 +61,3 @@ Follow these steps to set up and run SmartCents locally:
 
 ```
 
-```
