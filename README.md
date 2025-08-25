@@ -31,21 +31,34 @@ We noticed that financial literacy is rarely taught at a young age, yet it is on
 - Independence Score to gamify progress.  
 - AI Mentor and Chatbot that provide real-time financial advice.  
 
+Got it — you want the **entire thing inside ONE single Markdown block**, not split into multiple little ones. Here you go:
 
+````markdown
 ## Getting Started
-To run the project locally:
 
-1. **Clone the repository:**
+Follow these steps to set up and run SmartCents locally:
+
+1. **Clone the repository**
    ```bash
    git clone https://github.com/yourusername/SmartCents.git
    cd SmartCents
+````
 
-2. **Install dependencies:**
-   ```npm install
+2. **Install dependencies**
 
-3. **Start the server:**
-   ```node index.js
+   ```bash
+   npm install
+   ```
 
-4. **Open the app:**
-Go to http://localhost:3000 in your browser.
-  
+3. **Start the server**
+
+   ```bash
+   node index.js
+   ```
+
+4. **Open the app**
+   Go to [http://localhost:3000](http://localhost:3000) in your browser to view the dashboard.
+
+```
+
+```
