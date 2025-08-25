@@ -31,8 +31,6 @@ We noticed that financial literacy is rarely taught at a young age, yet it is on
 - Independence Score to gamify progress.  
 - AI Mentor and Chatbot that provide real-time financial advice.  
 
-Got it — you want the **entire thing inside ONE single Markdown block**, not split into multiple little ones. Here you go:
-
 ````markdown
 ## Getting Started
 
